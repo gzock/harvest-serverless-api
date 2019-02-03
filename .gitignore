@@ -243,7 +243,8 @@ $RECYCLE.BIN/
 
 
 # User Add
-site-packages
+/*/site-packages/*
+!harvest
 
 
 # End of https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
