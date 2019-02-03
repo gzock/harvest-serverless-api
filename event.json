@@ -43,7 +43,7 @@
     "identity": {
       "cognitoIdentityPoolId": null,
       "accountId": null,
-      "cognitoIdentityId": null,
+      "cognitoIdentityId": "hogehoge-foobar",
       "caller": null,
       "accessKey": null,
       "sourceIp": "127.0.0.1",
@@ -57,6 +57,11 @@
     "resourcePath": "/{proxy+}",
     "httpMethod": "POST",
     "apiId": "1234567890",
-    "protocol": "HTTP/1.1"
+    "protocol": "HTTP/1.1",
+    "authorizer": {
+      "claims": {
+        "cognito:username": "bob"
+      }
+    }
   }
 }
