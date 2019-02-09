@@ -25,7 +25,7 @@ aws dynamodb create-table \
     --key-schema \
         AttributeName=project_id,KeyType=HASH \
         AttributeName=user_id,KeyType=RANGE \
-    --global-secondary-indexes IndexName=ProjectRolesIndex,KeySchema=["{AttributeName=user_id,KeyType=HASH}"],Projection="{ProjectionType=ALL}",ProvisionedThroughput="{ReadCapacityUnits=3,WriteCapacityUnits=3}" \
+    --global-secondary-indexes IndexName=UserRolesIndex,KeySchema=["{AttributeName=user_id,KeyType=HASH}"],Projection="{ProjectionType=ALL}",ProvisionedThroughput="{ReadCapacityUnits=3,WriteCapacityUnits=3}" \
     --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3
 echo "----------"
 
