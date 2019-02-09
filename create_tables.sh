@@ -20,12 +20,12 @@ aws dynamodb create-table \
     --endpoint-url http://localhost:8000 \
     --table-name Roles \
     --attribute-definitions \
-        AttributeName=user_id,AttributeType=S \
         AttributeName=project_id,AttributeType=S \
+        AttributeName=user_id,AttributeType=S \
     --key-schema \
-        AttributeName=user_id,KeyType=HASH \
-        AttributeName=project_id,KeyType=RANGE \
-    --global-secondary-indexes IndexName=ProjectUsersIndex,KeySchema=["{AttributeName=project_id,KeyType=HASH}"],Projection="{ProjectionType=ALL}",ProvisionedThroughput="{ReadCapacityUnits=3,WriteCapacityUnits=3}" \
+        AttributeName=project_id,KeyType=HASH \
+        AttributeName=user_id,KeyType=RANGE \
+    --global-secondary-indexes IndexName=ProjectRolesIndex,KeySchema=["{AttributeName=user_id,KeyType=HASH}"],Projection="{ProjectionType=ALL}",ProvisionedThroughput="{ReadCapacityUnits=3,WriteCapacityUnits=3}" \
     --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3
 echo "----------"
 
