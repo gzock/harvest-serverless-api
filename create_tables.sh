@@ -41,6 +41,6 @@ aws dynamodb create-table \
     --key-schema \
         AttributeName=project_id,KeyType=HASH \
         AttributeName=place_id,KeyType=RANGE \
-    --local-secondary-indexes IndexName=ParentPlaceIndex,KeySchema=["{AttributeName=project_id,KeyType=HASH}","{AttributeName=parent_place_id,KeyType=RANGE}"],Projection="{ProjectionType=ALL}" \
+    --local-secondary-indexes IndexName=ParentPlacesIndex,KeySchema=["{AttributeName=project_id,KeyType=HASH}","{AttributeName=parent_place_id,KeyType=RANGE}"],Projection="{ProjectionType=ALL}" \
     --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3 
 echo "----------"
