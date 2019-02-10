@@ -1,14 +1,14 @@
 {
-  "body": "eyJ0ZXN0IjoiYm9keSJ9",
+  "body": "{\"name\":\"test_pj\"}",
   "resource": "/{proxy+}",
-  "path": "/path/to/resource",
+  "path": "/projects",
   "httpMethod": "POST",
   "isBase64Encoded": true,
   "queryStringParameters": {
     "foo": "bar"
   },
   "pathParameters": {
-    "proxy": "/path/to/resource"
+    "proxy": "None"
   },
   "stageVariables": {
     "baz": "qux"
@@ -43,7 +43,7 @@
     "identity": {
       "cognitoIdentityPoolId": null,
       "accountId": null,
-      "cognitoIdentityId": "hogehoge-foobar",
+      "cognitoIdentityId": "ryo_sasaki",
       "caller": null,
       "accessKey": null,
       "sourceIp": "127.0.0.1",
