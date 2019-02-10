@@ -22,6 +22,11 @@ Resources:
                 Variables:
                     PARAM1: VALUE
             Events:
+                OPTIONS:
+                    Type: Api
+                    Properties:
+                        Path: /projects
+                        Method: options
                 GET:
                     Type: Api
                     Properties:
@@ -32,17 +37,17 @@ Resources:
                     Properties:
                         Path: /projects
                         Method: post
-                GET:
+                GET_WITH_RESOURCE:
                     Type: Api
                     Properties:
                         Path: /projects/{proxy+}
                         Method: get
-                PUT:
+                PUT_WITH_RESOURCE:
                     Type: Api
                     Properties:
                         Path: /projects/{proxy+}
                         Method: put
-                DELETE:
+                DELETE_WITH_RESOURCE:
                     Type: Api
                     Properties:
                         Path: /projects/{proxy+}

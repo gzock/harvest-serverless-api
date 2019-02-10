@@ -24,7 +24,10 @@ def lambda_handler(event, context):
     raise e
 
   user_id = req.get_identity_id()
-  project.set_user_id(user_id)
+  # prod
+  # project.set_user_id(user_id)
+  # dev
+  project.set_user_id("ryo_sasaki")
   logger.info("requested user id: {}".format(user_id))
 
   username = req.get_username()
@@ -37,6 +40,11 @@ def lambda_handler(event, context):
   logger.info("requested http method: {}".format(req.get_method()))
   
   status_code = 200
+  headers = {
+      "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",
+      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT.DELETE",
+      "Access-Control-Allow-Origin": "*"
+  }
   # /projects
   if req.get_method() == "GET":
     # /projects/xxxx-xxxx-xxxx-xxxx
@@ -56,7 +64,12 @@ def lambda_handler(event, context):
   elif req.get_method() == "DELETE":
     ret = project.delete(project_id)
 
+  elif req.get_method() == "OPTIONS":
+    pass
+
   return {
       "statusCode": status_code,
+      "headers": headers,
       "body": json.dumps(ret)
   }
+
