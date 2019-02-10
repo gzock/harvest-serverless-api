@@ -65,7 +65,7 @@ def lambda_handler(event, context):
     ret = project.delete(project_id)
 
   elif req.get_method() == "OPTIONS":
-    pass
+    ret = []
 
   return {
       "statusCode": status_code,
