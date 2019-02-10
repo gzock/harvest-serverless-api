@@ -32,15 +32,20 @@ Resources:
                     Properties:
                         Path: /projects
                         Method: post
+                GET:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{proxy+}
+                        Method: get
                 PUT:
                     Type: Api
                     Properties:
-                        Path: /projects
+                        Path: /projects/{proxy+}
                         Method: put
                 DELETE:
                     Type: Api
                     Properties:
-                        Path: /projects
+                        Path: /projects/{proxy+}
                         Method: delete
 
 Outputs:
