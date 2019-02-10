@@ -53,6 +53,47 @@ Resources:
                         Path: /projects/{proxy+}
                         Method: delete
 
+    PlacesFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: places
+            Handler: places.lambda_handler #TODO: ここを複数作る必要がある？？
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PARAM1: VALUE
+            Events:
+                OPTIONS:
+                    Type: Api
+                    Properties:
+                        Path: /places
+                        Method: options
+                GET:
+                    Type: Api
+                    Properties:
+                        Path: /places
+                        Method: get
+                POST:
+                    Type: Api
+                    Properties:
+                        Path: /places
+                        Method: post
+                GET_WITH_RESOURCE:
+                    Type: Api
+                    Properties:
+                        Path: /places/{proxy+}
+                        Method: get
+                PUT_WITH_RESOURCE:
+                    Type: Api
+                    Properties:
+                        Path: /places/{proxy+}
+                        Method: put
+                DELETE_WITH_RESOURCE:
+                    Type: Api
+                    Properties:
+                        Path: /places/{proxy+}
+                        Method: delete
+
 Outputs:
 
     HelloWorldApi:
