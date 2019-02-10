@@ -17,9 +17,19 @@ try:
 
   place = PlaceController(DYNAMO_HOST, DYNAMO_PORT)
 
-  place.set_project_id("ea974534-c545-48f2-ac87-e296724298e7")
-  place.set_place_id("aaa")
-  #place.create("place_3")
+  place.set_project_id("9cb83d38-4950-4709-ad9d-7eeed2664ddc")
+  #place.create("root_place")
+  #print( place.list_children("9cb83d38-4950-4709-ad9d-7eeed2664ddc") )
+  #place.create("first_place_2", "8003532a-2122-44ff-95c2-5e5276b45453")
+  print( place.list_children("8003532a-2122-44ff-95c2-5e5276b45453") )
+  
+  #place.set_place_id("f58d7b86-0b4a-442f-9ee1-79635b43b4bf")
+  #place.update_name("first_place_renamed")
+  #print( place.show("f58d7b86-0b4a-442f-9ee1-79635b43b4bf") )
+  
+  #place.set_place_id("7f883379-1291-49e5-8030-9827cce54a8f")
+  #place.delete()
+
   #place.update_name("place_3")
   #place.update_users(["user1", "user2", "user3"])
   #place.delete()
