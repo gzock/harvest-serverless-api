@@ -8,7 +8,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr
 import logging
 
-from harvest import RequestDecorator, ProjectDriver
+from harvest import RequestDecorator, PlaceController
 
 DYNAMO_HOST = "10.0.2.15"
 DYNAMO_PORT = "8000"
@@ -17,39 +17,59 @@ def lambda_handler(event, context):
   logger = logging.getLogger()
   logger.setLevel(logging.INFO)
 
-  req = RequestDecorator(event)
-  user_id = req.get_identity_id()
-  logger.info("requested user id: {}".format(user_id))
-  username = req.get_username()
-  logger.info("requested user name: {}".format(username))
-  project_id = req.get_path_param() #uuidの確認
-  logger.info("requested project_id: {}".format(project_id))
-  logger.info("requested http method: {}".format(req.get_method()))
-  
   try:
-    projects = ProjectDriver(DYNAMO_HOST, DYNAMO_PORT)
+    project = PlaceController(DYNAMO_HOST, DYNAMO_PORT)
+    req = RequestDecorator(event)
   except Exception as e:
     raise e
 
-  if req.get_method() == "GET":
-    if len(project_id):
-     ret = projects.get(project_id)
-    else:
-     ret = projects.get_all(user_id)
+  user_id = req.get_identity_id()
+  # prod
+  # project.set_user_id(user_id)
+  # dev
+  project.set_user_id("ryo_sasaki")
+  logger.info("requested user id: {}".format(user_id))
 
+  username = req.get_username()
+  logger.info("requested user name: {}".format(username))
+
+  project_id = req.get_path_param() #uuidの確認
+  if project_id:
+    project.set_project_id(project_id)
+  logger.info("requested project_id: {}".format(project_id))
+  logger.info("requested http method: {}".format(req.get_method()))
+  
+  status_code = 200
+  headers = {
+      "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",
+      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT.DELETE",
+      "Access-Control-Allow-Origin": "*"
+  }
+  # /projects
+  if req.get_method() == "GET":
+    # /projects/xxxx-xxxx-xxxx-xxxx
+    if project_id:
+      ret = project.show()
+    else:
+      ret = project.list_projects()
+
+  # /projects
   elif req.get_method() == "POST":
-    #ret = projects.set(user_id) #set? add?
-     ret = projects.get_all() #dummy
+    name = req.get_body()["name"]
+    ret = project.create(name)
 
   elif req.get_method() == "PUT":
-    ret = projects.update(project_id, body)
+    ret = project.update(project_id, body)
 
   elif req.get_method() == "DELETE":
-    ret = projects.delete(project_id)
+    ret = project.delete(project_id)
+
+  elif req.get_method() == "OPTIONS":
+    ret = []
 
   return {
-      "statusCode": 200,
-      "body": json.dumps(
-          {"message": str(ret)}
-      )
+      "statusCode": status_code,
+      "headers": headers,
+      "body": json.dumps(ret)
   }
+
