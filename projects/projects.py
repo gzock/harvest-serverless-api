@@ -36,13 +36,14 @@ def lambda_handler(event, context):
   logger.info("requested project_id: {}".format(project_id))
   logger.info("requested http method: {}".format(req.get_method()))
   
+  status_code = 200
   # /projects
   if req.get_method() == "GET":
     # /projects/xxxx-xxxx-xxxx-xxxx
     if project_id:
-     ret = project.show()
+      ret = project.show()
     else:
-     ret = project.list_projects()
+      ret = project.list_projects()
 
   # /projects
   elif req.get_method() == "POST":
@@ -56,8 +57,6 @@ def lambda_handler(event, context):
     ret = project.delete(project_id)
 
   return {
-      "statusCode": 200,
-      "body": json.dumps(
-          {"message": str(ret)}
-      )
+      "statusCode": status_code,
+      "body": json.dumps(ret)
   }
