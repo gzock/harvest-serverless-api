@@ -2,7 +2,7 @@ import os, sys
 import json
 from botocore.vendored import requests
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'site-packages'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 
 import boto3
 from boto3.dynamodb.conditions import Key, Attr

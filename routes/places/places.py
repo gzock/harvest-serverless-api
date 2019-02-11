@@ -1,11 +1,9 @@
 import os, sys
 import json
-from botocore.vendored import requests
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'site-packages'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
 import logging
 
 from harvest import RequestDecorator, PlaceController
@@ -33,8 +31,8 @@ def lambda_handler(event, context):
   username = req.get_username()
   logger.info("requested user name: {}".format(username))
 
-  project_id = req.get_path_param() #uuidの確認
-  if project_id:
+  place_id = req.get_path_param() #uuidの確認
+  if place_id:
     project.set_project_id(project_id)
   logger.info("requested project_id: {}".format(project_id))
   logger.info("requested http method: {}".format(req.get_method()))
@@ -45,27 +43,25 @@ def lambda_handler(event, context):
       "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT.DELETE",
       "Access-Control-Allow-Origin": "*"
   }
-  # /projects
-  if req.get_method() == "GET":
-    # /projects/xxxx-xxxx-xxxx-xxxx
-    if project_id:
-      ret = project.show()
-    else:
-      ret = project.list_projects()
 
-  # /projects
-  elif req.get_method() == "POST":
-    name = req.get_body()["name"]
-    ret = project.create(name)
+  print(event)
+  ## /places/xxxx-xxxx-xxxx-xxxx
+  #if req.get_method() == "GET":
+  #    ret = place.list_children(place_id)
 
-  elif req.get_method() == "PUT":
-    ret = project.update(project_id, body)
+  ## /places
+  #elif req.get_method() == "POST":
+  #  name = req.get_body()["name"]
+  #  ret = project.create(name)
 
-  elif req.get_method() == "DELETE":
-    ret = project.delete(project_id)
+  #elif req.get_method() == "PUT":
+  #  ret = project.update(project_id, body)
 
-  elif req.get_method() == "OPTIONS":
-    ret = []
+  #elif req.get_method() == "DELETE":
+  #  ret = project.delete(project_id)
+
+  #elif req.get_method() == "OPTIONS":
+  #  ret = []
 
   return {
       "statusCode": status_code,

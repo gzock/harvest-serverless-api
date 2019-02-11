@@ -15,8 +15,8 @@ Resources:
     ProjectsFunction:
         Type: AWS::Serverless::Function
         Properties:
-            CodeUri: projects
-            Handler: projects.lambda_handler #TODO: ここを複数作る必要がある？？
+            CodeUri: routes
+            Handler: projects/projects.lambda_handler #TODO: ここを複数作る必要がある？？
             Runtime: python3.6
             Environment:
                 Variables:
@@ -40,24 +40,24 @@ Resources:
                 GET_WITH_RESOURCE:
                     Type: Api
                     Properties:
-                        Path: /projects/{proxy+}
+                        Path: /projects/{proxy}
                         Method: get
                 PUT_WITH_RESOURCE:
                     Type: Api
                     Properties:
-                        Path: /projects/{proxy+}
+                        Path: /projects/{proxy}
                         Method: put
                 DELETE_WITH_RESOURCE:
                     Type: Api
                     Properties:
-                        Path: /projects/{proxy+}
+                        Path: /projects/{proxy}
                         Method: delete
 
     PlacesFunction:
         Type: AWS::Serverless::Function
         Properties:
-            CodeUri: places
-            Handler: places.lambda_handler #TODO: ここを複数作る必要がある？？
+            CodeUri: routes
+            Handler: places/places.lambda_handler #TODO: ここを複数作る必要がある？？
             Runtime: python3.6
             Environment:
                 Variables:
@@ -66,32 +66,42 @@ Resources:
                 OPTIONS:
                     Type: Api
                     Properties:
-                        Path: /places
+                        Path: /projects/{project_id}/places
                         Method: options
-                GET:
+                GET: #プロジェクト配下の全てのplaceを取得
                     Type: Api
                     Properties:
-                        Path: /places
+                        Path: /projects/{project_id}/places
                         Method: get
-                POST:
+                POST: #project配下(root)に新規placeを作成
                     Type: Api
                     Properties:
-                        Path: /places
+                        Path: /projects/{project_id}/places
                         Method: post
-                GET_WITH_RESOURCE:
+                GET_WITH_RESOURCE: #place単体の情報を取得
                     Type: Api
                     Properties:
-                        Path: /places/{proxy+}
+                        Path: /projects/{project_id}/places/{place_id}
                         Method: get
-                PUT_WITH_RESOURCE:
+                GET_CHILDREN: #指定されたplaceのchildrenを取得
                     Type: Api
                     Properties:
-                        Path: /places/{proxy+}
+                        Path: /projects/{project_id}/places/{place_id}/children
+                        Method: get
+                POST_WITH_RESOURCE: #指定されたplace_id配下にplaceを作成
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/places/{place_id}
+                        Method: post
+                PUT_WITH_RESOURCE: #placeの名前など単体の情報の何かを更新
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/places/{place_id}
                         Method: put
-                DELETE_WITH_RESOURCE:
+                DELETE_WITH_RESOURCE: #place単体を削除
                     Type: Api
                     Properties:
-                        Path: /places/{proxy+}
+                        Path: /projects/{project_id}/places/{place_id}
                         Method: delete
 
 Outputs:
