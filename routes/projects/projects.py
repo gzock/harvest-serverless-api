@@ -34,10 +34,11 @@ def lambda_handler(event, context):
   logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params() #uuidの確認
-  project_id = path_params["project_id"]
-  if project_id:
+  project_id = None
+  if "project_id" in path_params:
+    project_id = path_params["project_id"]
     project.set_project_id(project_id)
-  logger.info("requested project_id: {}".format(project_id))
+    logger.info("requested project_id: {}".format(project_id))
   logger.info("requested http method: {}".format(req.get_method()))
   logger.info("requested path: {}".format(req.get_path()))
   logger.info("requested pathParams: {}".format(req.get_path_params()))
