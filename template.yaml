@@ -40,17 +40,17 @@ Resources:
                 GET_WITH_RESOURCE:
                     Type: Api
                     Properties:
-                        Path: /projects/{proxy}
+                        Path: /projects/{project_id}
                         Method: get
                 PUT_WITH_RESOURCE:
                     Type: Api
                     Properties:
-                        Path: /projects/{proxy}
+                        Path: /projects/{project_id}
                         Method: put
                 DELETE_WITH_RESOURCE:
                     Type: Api
                     Properties:
-                        Path: /projects/{proxy}
+                        Path: /projects/{project_id}
                         Method: delete
 
     PlacesFunction:
