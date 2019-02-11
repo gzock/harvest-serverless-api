@@ -64,7 +64,7 @@ def lambda_handler(event, context):
   elif req.get_method() == "POST":
     name = req.get_body()["name"]
     # /projects/{project_id}/places/{place_id}/targets
-    if place_id:
+    if "place_id" in locals():
       ret = target.create(name, place_id)
 
     # /projects/{project_id}/targets
