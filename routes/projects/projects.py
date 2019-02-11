@@ -39,6 +39,8 @@ def lambda_handler(event, context):
     project.set_project_id(project_id)
   logger.info("requested project_id: {}".format(project_id))
   logger.info("requested http method: {}".format(req.get_method()))
+  logger.info("requested path: {}".format(req.get_path()))
+  logger.info("requested pathParams: {}".format(req.get_path_params()))
   
   status_code = 200
   headers = {
