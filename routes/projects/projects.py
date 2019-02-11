@@ -33,7 +33,8 @@ def lambda_handler(event, context):
   username = req.get_username()
   logger.info("requested user name: {}".format(username))
 
-  project_id = req.get_path_param() #uuidの確認
+  path_params = req.get_path_params() #uuidの確認
+  project_id = path_params["project_id"]
   if project_id:
     project.set_project_id(project_id)
   logger.info("requested project_id: {}".format(project_id))
