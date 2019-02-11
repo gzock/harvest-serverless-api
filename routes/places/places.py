@@ -35,13 +35,13 @@ def lambda_handler(event, context):
   if "project_id" in path_params:
     project_id = path_params["project_id"]
     place.set_project_id(project_id)
-  logger.info("requested project_id: {}".format(project_id))
+    logger.info("requested project_id: {}".format(project_id))
 
   if "place_id" in path_params:
     place_id = path_params["place_id"]
     place.set_place_id(place_id)
+    logger.info("requested place_id: {}".format(place_id))
 
-  logger.info("requested place_id: {}".format(place_id))
   logger.info("requested http method: {}".format(req.get_method()))
   logger.info("requested path: {}".format(req.get_path()))
   logger.info("requested pathParams: {}".format(req.get_path_params()))
