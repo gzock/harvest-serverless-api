@@ -104,6 +104,57 @@ Resources:
                         Path: /projects/{project_id}/places/{place_id}
                         Method: delete
 
+    TargetsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: routes
+            Handler: targets/targets.lambda_handler #TODO: ここを複数作る必要がある？？
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PARAM1: VALUE
+            Events:
+                OPTIONS:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets
+                        Method: options
+                #GET: #プロジェクト配下の全てのplaceを取得 #place側と統合予定
+                #    Type: Api
+                #    Properties:
+                #        Path: /projects/{project_id}/targets
+                #        Method: get
+                GET_WITH_RESOURCE: #target単体の情報を取得
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}
+                        Method: get
+                #GET_CHILDREN: #指定されたplaceのchildrenを取得 #place側と統合予定
+                #    Type: Api
+                #    Properties:
+                #        Path: /projects/{project_id}/places/{place_id}/targets
+                #        Method: get
+                PUT_WITH_RESOURCE: #targetの名前など単体の情報の何かを更新
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}
+                        Method: put
+                DELETE_WITH_RESOURCE: #target単体を削除
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}
+                        Method: delete
+                POST: #project配下(root)に新規placeを作成
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets
+                        Method: post
+                POST_WITH_RESOURCE: #指定されたplace_id配下にtargetを作成
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/places/{place_id}/targets
+                        Method: post
+
 Outputs:
 
     HelloWorldApi:
