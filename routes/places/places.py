@@ -16,7 +16,7 @@ def lambda_handler(event, context):
   logger.setLevel(logging.INFO)
 
   try:
-    project = PlaceController(DYNAMO_HOST, DYNAMO_PORT)
+    place = PlaceController(DYNAMO_HOST, DYNAMO_PORT)
     req = RequestDecorator(event)
   except Exception as e:
     raise e
@@ -25,17 +25,26 @@ def lambda_handler(event, context):
   # prod
   # project.set_user_id(user_id)
   # dev
-  project.set_user_id("ryo_sasaki")
+  #place.set_user_id("ryo_sasaki")
   logger.info("requested user id: {}".format(user_id))
 
   username = req.get_username()
   logger.info("requested user name: {}".format(username))
 
-  place_id = req.get_path_param() #uuidの確認
-  if place_id:
-    project.set_project_id(project_id)
+  path_params = req.get_path_params()
+  if "project_id" in path_params:
+    project_id = path_params["project_id"]
+    place.set_project_id(project_id)
   logger.info("requested project_id: {}".format(project_id))
+
+  if "place_id" in path_params:
+    place_id = path_params["place_id"]
+    place.set_place_id(place_id)
+
+  logger.info("requested place_id: {}".format(place_id))
   logger.info("requested http method: {}".format(req.get_method()))
+  logger.info("requested path: {}".format(req.get_path()))
+  logger.info("requested pathParams: {}".format(req.get_path_params()))
   
   status_code = 200
   headers = {
@@ -44,24 +53,40 @@ def lambda_handler(event, context):
       "Access-Control-Allow-Origin": "*"
   }
 
-  print(event)
-  ## /places/xxxx-xxxx-xxxx-xxxx
-  #if req.get_method() == "GET":
-  #    ret = place.list_children(place_id)
+  if req.get_method() == "GET":
+    if place_id:
+      if "children" in req.get_path():
+        # /projects/{project_id}/places/{place_id}/children
+        ret = place.list_children(place_id)
+      else:
+        # /projects/{project_id}/places/{place_id}
+        ret = place.show(place_id)
 
-  ## /places
-  #elif req.get_method() == "POST":
-  #  name = req.get_body()["name"]
-  #  ret = project.create(name)
+    # /projects/{project_id}/places
+    else:
+      ret = place.list_children(project_id)
 
-  #elif req.get_method() == "PUT":
-  #  ret = project.update(project_id, body)
+  elif req.get_method() == "POST":
+    name = req.get_body()["name"]
+    # /projects/{project_id}/places/{place_id}
+    if place_id:
+      ret = place.create(name, place_id)
 
-  #elif req.get_method() == "DELETE":
-  #  ret = project.delete(project_id)
+    # /projects/{project_id}/places
+    else:
+      ret = place.create(name)
 
-  #elif req.get_method() == "OPTIONS":
-  #  ret = []
+  # /projects/{project_id}/places/{place_id}
+  elif req.get_method() == "PUT":
+    name = req.get_body()["name"]
+    ret = place.update(project_id, name)
+
+  # /projects/{project_id}/places/{place_id}
+  elif req.get_method() == "DELETE":
+    ret = place.delete(project_id)
+
+  elif req.get_method() == "OPTIONS":
+    ret = []
 
   return {
       "statusCode": status_code,
