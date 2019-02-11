@@ -1,12 +1,13 @@
 import os, sys
 import json
+import decimal
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 
 import boto3
 import logging
 
-from harvest import RequestDecorator, PlaceController
+from harvest import RequestDecorator, PlaceController, TargetController
 
 DYNAMO_HOST = "10.0.2.15"
 DYNAMO_PORT = "8000"
@@ -17,6 +18,7 @@ def lambda_handler(event, context):
 
   try:
     place = PlaceController(DYNAMO_HOST, DYNAMO_PORT)
+    target = TargetController(DYNAMO_HOST, DYNAMO_PORT)
     req = RequestDecorator(event)
   except Exception as e:
     raise e
@@ -35,6 +37,7 @@ def lambda_handler(event, context):
   if "project_id" in path_params:
     project_id = path_params["project_id"]
     place.set_project_id(project_id)
+    target.set_project_id(project_id)
     logger.info("requested project_id: {}".format(project_id))
 
   if "place_id" in path_params:
@@ -54,22 +57,32 @@ def lambda_handler(event, context):
   }
 
   if req.get_method() == "GET":
-    if place_id:
+    if "place_id" in locals():
       if "children" in req.get_path():
         # /projects/{project_id}/places/{place_id}/children
-        ret = place.list_children(place_id)
+        places = place.list_children(place_id)
+        targets = target.list_children(place_id)
+        ret = {
+          "places": places,
+          "targets": targets
+        }
       else:
         # /projects/{project_id}/places/{place_id}
         ret = place.show(place_id)
 
     # /projects/{project_id}/places
     else:
-      ret = place.list_children(project_id)
+      places = place.list_children(project_id)
+      targets = target.list_children(place_id)
+      ret = {
+        "places": places,
+        "targets": targets
+      }
 
   elif req.get_method() == "POST":
     name = req.get_body()["name"]
     # /projects/{project_id}/places/{place_id}
-    if place_id:
+    if "place_id" in locals():
       ret = place.create(name, place_id)
 
     # /projects/{project_id}/places
@@ -88,9 +101,16 @@ def lambda_handler(event, context):
   elif req.get_method() == "OPTIONS":
     ret = []
 
+  print(ret)
+
   return {
       "statusCode": status_code,
       "headers": headers,
-      "body": json.dumps(ret)
+      "body": json.dumps(ret, cls = DecimalEncoder)
   }
 
+class DecimalEncoder(json.JSONEncoder):
+  def default(self, o):
+    if isinstance(o, decimal.Decimal):
+      return str(o)
+    return super(DecimalEncoder, self).default(o)
