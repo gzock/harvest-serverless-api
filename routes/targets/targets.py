@@ -1,11 +1,8 @@
 import os, sys
 import json
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
-
-import boto3
 import logging
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator, TargetController
 
 DYNAMO_HOST = "10.0.2.15"
