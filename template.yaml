@@ -165,6 +165,56 @@ Resources:
                         Path: /projects/{project_id}/places/{place_id}/targets
                         Method: post
 
+    PhotosFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: routes
+            Handler: photos/photos.lambda_handler #TODO: ここを複数作る必要がある？？
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PARAM1: VALUE
+            Events:
+                OPTIONS:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}/photos
+                        Method: options
+                GET: #target単体配下の写真全てを取得
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}/photos
+                        Method: get
+                POST: #target単体配下に写真を追加
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}/photos
+                        Method: post
+                PUT: #写真を採用
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}/photos
+                        Method: put
+                OPTIONS_WITH_RESOURCE:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
+                        Method: options
+                GET_WITH_RESOURCE: #target単体配下の写真単体を取得
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
+                        Method: get
+                PUT_WITH_RESOURCE: #target単体配下の写真の何かを変更
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
+                        Method: put
+                DELETE_WITH_RESOURCE: #target単体配下の写真単体を削除
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
+                        Method: delete
 Outputs:
 
     HelloWorldApi:
