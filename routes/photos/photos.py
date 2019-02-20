@@ -1,9 +1,10 @@
 import os, sys
 import json
 import logging
+from base64 import b64encode, b64decode
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
-from harvest import RequestDecorator, TargetController
+from harvest import RequestDecorator, PhotoController
 
 DYNAMO_HOST = "10.0.2.15"
 DYNAMO_PORT = "8000"
@@ -62,12 +63,12 @@ def lambda_handler(event, context):
       # /projects/{project_id}/targets/{target_id}/photos
       ret = photo.show(photo_id)
 
-
   elif req.get_method() == "POST" and target_id:
     type = req.get_body()["type"]
-    src = req.get_body()["src"]
+    enc_data = req.get_body()["data"]
+    data = b64decode(enc_data)
     # /projects/{project_id}/targets/{target_id}/photos
-    ret = photo.create(name, target_id, type, src)
+    ret = photo.create(target_id, type, data)
 
   # /projects/{project_id}/targets/{target_id}/photos
   elif req.get_method() == "PUT" and target_id:
