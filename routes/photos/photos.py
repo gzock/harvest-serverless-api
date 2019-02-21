@@ -58,10 +58,10 @@ def lambda_handler(event, context):
   if req.get_method() == "GET" and target_id:
     # /projects/{project_id}/targets/{target_id}/photos/{photo_id}
     if "photo_id" in locals():
-      ret = photo.list(target_id)
+      ret = photo.show(photo_id, encode=True)
     else:
       # /projects/{project_id}/targets/{target_id}/photos
-      ret = photo.show(photo_id)
+      ret = photo.list(target_id)
 
   elif req.get_method() == "POST" and target_id:
     type = req.get_body()["type"]
