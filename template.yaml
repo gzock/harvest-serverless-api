@@ -81,7 +81,7 @@ Resources:
                 ForCORS2:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/places/{proxy+}
+                        Path: /projects/{project_id}/places/{place_id}
                         Method: options
                 GetPlace: #place単体の情報を取得
                     Type: Api
@@ -142,7 +142,7 @@ Resources:
                 ForCORS2:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/targets/{proxy+}
+                        Path: /projects/{project_id}/targets/{target_id}
                         Method: options
                 UpdateTarget: #targetの名前など単体の情報の何かを更新
                     Type: Api
@@ -215,16 +215,16 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
                         Method: delete
-Outputs:
-
-    HelloWorldApi:
-      Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-      Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-
-    HelloWorldFunction:
-      Description: "Hello World Lambda Function ARN"
-      Value: !GetAtt HelloWorldFunction.Arn
-
-    HelloWorldFunctionIamRole:
-      Description: "Implicit IAM Role created for Hello World function"
-      Value: !GetAtt HelloWorldFunctionRole.Arn
+#Outputs:
+#
+#    HelloWorldApi:
+#      Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+#      Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+#
+#    HelloWorldFunction:
+#      Description: "Hello World Lambda Function ARN"
+#      Value: !GetAtt HelloWorldFunction.Arn
+#
+#    HelloWorldFunctionIamRole:
+#      Description: "Implicit IAM Role created for Hello World function"
+#      Value: !GetAtt HelloWorldFunctionRole.Arn
