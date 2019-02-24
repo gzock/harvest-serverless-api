@@ -22,32 +22,32 @@ Resources:
                 Variables:
                     PARAM1: VALUE
             Events:
-                OPTIONS:
+                ForCORS:
                     Type: Api
                     Properties:
                         Path: /projects
                         Method: options
-                GET:
+                GetProjects:
                     Type: Api
                     Properties:
                         Path: /projects
                         Method: get
-                POST:
+                CreateProject:
                     Type: Api
                     Properties:
                         Path: /projects
                         Method: post
-                GET_WITH_RESOURCE:
+                GetProject:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}
                         Method: get
-                PUT_WITH_RESOURCE:
+                UpdateProject:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}
                         Method: put
-                DELETE_WITH_RESOURCE:
+                DeleteProject:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}
@@ -63,47 +63,47 @@ Resources:
                 Variables:
                     PARAM1: VALUE
             Events:
-                OPTIONS:
+                ForCORS:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places
                         Method: options
-                GET: #プロジェクト配下の全てのplaceを取得
+                GetPlaces: #プロジェクト配下の全てのplaceを取得
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places
                         Method: get
-                POST: #project配下(root)に新規placeを作成
+                CreatePlace: #project配下(root)に新規placeを作成
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places
                         Method: post
-                OPTIONS_WITH_RESOURCE:
+                ForCORS2:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places/{proxy+}
                         Method: options
-                GET_WITH_RESOURCE: #place単体の情報を取得
+                GetPlace: #place単体の情報を取得
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places/{place_id}
                         Method: get
-                GET_CHILDREN: #指定されたplaceのchildrenを取得
+                GetPlaceChildren: #指定されたplaceのchildrenを取得
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places/{place_id}/children
                         Method: get
-                POST_WITH_RESOURCE: #指定されたplace_id配下にplaceを作成
+                CreatePlaceOfChild: #指定されたplace_id配下にplaceを作成
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places/{place_id}
                         Method: post
-                PUT_WITH_RESOURCE: #placeの名前など単体の情報の何かを更新
+                UpdatePlace: #placeの名前など単体の情報の何かを更新
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places/{place_id}
                         Method: put
-                DELETE_WITH_RESOURCE: #place単体を削除
+                DeletePlace: #place単体を削除
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places/{place_id}
@@ -119,7 +119,7 @@ Resources:
                 Variables:
                     PARAM1: VALUE
             Events:
-                OPTIONS:
+                ForCORS:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets
@@ -129,7 +129,7 @@ Resources:
                 #    Properties:
                 #        Path: /projects/{project_id}/targets
                 #        Method: get
-                GET_WITH_RESOURCE: #target単体の情報を取得
+                GetTarget: #target単体の情報を取得
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}
@@ -139,27 +139,27 @@ Resources:
                 #    Properties:
                 #        Path: /projects/{project_id}/places/{place_id}/targets
                 #        Method: get
-                OPTIONS_WITH_RESOURCE:
+                ForCORS2:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{proxy+}
                         Method: options
-                PUT_WITH_RESOURCE: #targetの名前など単体の情報の何かを更新
+                UpdateTarget: #targetの名前など単体の情報の何かを更新
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}
                         Method: put
-                DELETE_WITH_RESOURCE: #target単体を削除
+                DeleteTarget: #target単体を削除
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}
                         Method: delete
-                POST: #project配下(root)に新規placeを作成
+                CreateTargetOnProject: #project配下(root)に新規placeを作成
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets
                         Method: post
-                POST_WITH_RESOURCE: #指定されたplace_id配下にtargetを作成
+                CreateTargetOnPlace: #指定されたplace_id配下にtargetを作成
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/places/{place_id}/targets
@@ -175,42 +175,42 @@ Resources:
                 Variables:
                     PARAM1: VALUE
             Events:
-                OPTIONS:
+                ForCORS:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos
                         Method: options
-                GET: #target単体配下の写真全てを取得
+                GetAllPhotosForTarget: #target単体配下の写真全てを取得
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos
                         Method: get
-                POST: #target単体配下に写真を追加
+                CreatePhoto: #target単体配下に写真を追加
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos
                         Method: post
-                PUT: #写真を採用
+                AdoptPhoto: #写真を採用
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos
                         Method: put
-                OPTIONS_WITH_RESOURCE:
+                ForCORS2:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
                         Method: options
-                GET_WITH_RESOURCE: #target単体配下の写真単体を取得
+                GetPhoto: #target単体配下の写真単体を取得
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
                         Method: get
-                PUT_WITH_RESOURCE: #target単体配下の写真の何かを変更
+                UpdatePhoto: #target単体配下の写真の何かを変更
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
                         Method: put
-                DELETE_WITH_RESOURCE: #target単体配下の写真単体を削除
+                DeletePhoto: #target単体配下の写真単体を削除
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
