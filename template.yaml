@@ -11,6 +11,32 @@ Globals:
         Timeout: 60
 
 Resources:
+    #HarvestApi:
+    #    Type: AWS::Serverless::Api
+    #    Properties:
+    #        StageName: Prod
+    #        DefinitionBody:
+    #            securityDefinitions:
+    #                cognitoUserPool:
+    #                    type: apiKey
+    #                    name: "Authorization"
+    #                    in: header
+    #                    x-amazon-apigateway-authtype: cognito_user_pools
+    #                    x-amazon-apigateway-authorizer:
+    #                        type: cognito_user_pools
+    #                        providerARNs:
+    #                            - arn:aws:cognito-idp:ap-northeast-1:405369695225:userpool/ap-northeast-1_KrEPljcrG
+    #            paths:
+    #                "/":
+    #                    get:
+    #                        security:
+    #                            - cognitoUserPool: []
+        #Cors:
+        #    AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
+        #    AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        #    AllowOrigin: "'*'"
+        #    AllowCredentials: "'true'"
+        # https://github.com/awslabs/serverless-application-model/blob/master/examples/2016-10-31/api_cognito_auth/template.yaml
 
     ProjectsFunction:
         Type: AWS::Serverless::Function
@@ -215,6 +241,25 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
                         Method: delete
+#    HarvestApi:
+#        Type: AWS::Serverless::Api
+#        Properties:
+#            StageName: Prod
+#            Auth:
+#                DefaultAuthorizer: HarvestAuthorizer
+#                Authorizers:
+#                    HarvestAuthorizer:
+#                        UserPoolArn: "arn:aws:cognito-idp:ap-northeast-1:405369695225:userpool/ap-northeast-1_KrEPljcrG"
+#                        Identity:
+#                            Header: "Authorization"
+#    Deployment: 
+#        DependsOn: PhotosFunction
+#        Type: AWS::ApiGateway::Deployment
+#        Properties: 
+#          RestApiId: 
+#            Ref: HarvestApi
+#          StageName: Prod
+
 #Outputs:
 #
 #    HelloWorldApi:
