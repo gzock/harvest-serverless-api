@@ -119,6 +119,11 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/places/{place_id}/children
                         Method: get
+                ForCORS3:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/places/{place_id}/children
+                        Method: options
                 CreatePlaceOfChild: #指定されたplace_id配下にplaceを作成
                     Type: Api
                     Properties:
