@@ -51,7 +51,7 @@ def lambda_handler(event, context):
   status_code = 200
   headers = {
       "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",
-      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT.DELETE",
+      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
       "Access-Control-Allow-Origin": "*"
   }
 
@@ -70,14 +70,14 @@ def lambda_handler(event, context):
     # /projects/{project_id}/targets/{target_id}/photos
     ret = photo.create(target_id, type, data)
 
-  # /projects/{project_id}/targets/{target_id}/photos
+  # /projects/{project_id}/targets/{target_id}/photos/{photo_id}
   elif req.get_method() == "PUT" and target_id:
-    name = req.get_body()["name"]
-    ret = photo.update_adopt(target_id, photo_id)
+    type = req.get_body()["type"]
+    ret = photo.update_adopt(target_id, type, photo_id)
 
   # /projects/{project_id}/targets/{target_id}/photos/{photo_id}
   elif req.get_method() == "DELETE" and photo_id:
-    ret = photo.delete(photo_id)
+    ret = photo.delete(target_id, photo_id)
 
   elif req.get_method() == "OPTIONS":
     ret = []
