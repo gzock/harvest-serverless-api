@@ -71,7 +71,7 @@ def lambda_handler(event, context):
   # /projects/{project_id}/targets/{target_id}
   elif req.get_method() == "PUT" and target_id:
     name = req.get_body()["name"]
-    ret = target.update(project_id, name)
+    ret = target.update_name(name)
 
   # /projects/{project_id}/targets/{target_id}
   elif req.get_method() == "DELETE" and target_id:
