@@ -190,6 +190,11 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/targets
                         Method: post
+                ForCORS3:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/places/{place_id}/targets
+                        Method: options
                 CreateTargetOnPlace: #指定されたplace_id配下にtargetを作成
                     Type: Api
                     Properties:
