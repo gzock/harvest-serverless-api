@@ -37,6 +37,7 @@ def lambda_handler(event, context):
   logger.info("requested http method: {}".format(req.get_method()))
   logger.info("requested path: {}".format(req.get_path()))
   logger.info("requested pathParams: {}".format(req.get_path_params()))
+  logger.info("requested raw_event: {}".format(req.get_raw_event()))
   
   status_code = 200
   headers = {

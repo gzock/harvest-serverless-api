@@ -49,7 +49,7 @@ def lambda_handler(event, context):
   status_code = 200
   headers = {
       "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",
-      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT.DELETE",
+      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
       "Access-Control-Allow-Origin": "*"
   }
 
