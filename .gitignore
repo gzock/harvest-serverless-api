@@ -245,6 +245,7 @@ $RECYCLE.BIN/
 # User Add
 /*/site-packages/*
 !harvest
+!decode_verify_jwt.py
 test.py
 packaged.yaml
 
