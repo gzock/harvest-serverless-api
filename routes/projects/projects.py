@@ -4,6 +4,7 @@ import logging
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator, ProjectController
+from decode_verify_jwt import decode_verify_jwt
 
 DYNAMO_HOST = "10.0.2.15"
 DYNAMO_PORT = "8000"
@@ -22,11 +23,14 @@ def lambda_handler(event, context):
   # prod
   # project.set_user_id(user_id)
   # dev
-  project.set_user_id("ryo_sasaki")
-  logger.info("requested user id: {}".format(user_id))
-
-  username = req.get_username()
-  logger.info("requested user name: {}".format(username))
+  if "Authorization" in req.get_headers():
+    decoded = decode_verify_jwt(req.get_headers()["Authorization"])
+    user_id = decoded["cognito:username"]
+    username = decoded["preferred_username"]
+    project.set_user_id(user_id)
+    logger.info("requested user id: {}".format(user_id))
+    #username = req.get_username()
+    logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params() #uuidの確認
   project_id = None
@@ -37,7 +41,8 @@ def lambda_handler(event, context):
   logger.info("requested http method: {}".format(req.get_method()))
   logger.info("requested path: {}".format(req.get_path()))
   logger.info("requested pathParams: {}".format(req.get_path_params()))
-  logger.info("requested raw_event: {}".format(req.get_raw_event()))
+  logger.info("requested http headers: {}".format(str(req.get_headers())))
+  #logger.info("requested raw_event: {}".format(req.get_raw_event()))
   
   status_code = 200
   headers = {
