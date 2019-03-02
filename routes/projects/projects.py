@@ -25,12 +25,14 @@ def lambda_handler(event, context):
   # dev
   if "Authorization" in req.get_headers():
     decoded = decode_verify_jwt(req.get_headers()["Authorization"])
-    user_id = decoded["cognito:username"]
-    username = decoded["preferred_username"]
-    project.set_user_id(user_id)
-    logger.info("requested user id: {}".format(user_id))
-    #username = req.get_username()
-    logger.info("requested user name: {}".format(username))
+    logger.info("decoded authorization header: {}".format(decoded))
+    if decoded:
+      user_id = decoded["cognito:username"]
+      username = decoded["preferred_username"]
+      project.set_user_id(user_id)
+      logger.info("requested user id: {}".format(user_id))
+      #username = req.get_username()
+      logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params() #uuidの確認
   project_id = None
