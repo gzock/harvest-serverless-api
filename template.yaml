@@ -46,7 +46,7 @@ Resources:
             Runtime: python3.6
             Environment:
                 Variables:
-                    PARAM1: VALUE
+                    PYTHONPATH: /var/task/site-packages
             Events:
                 ForCORS:
                     Type: Api
@@ -87,7 +87,7 @@ Resources:
             Runtime: python3.6
             Environment:
                 Variables:
-                    PARAM1: VALUE
+                    PYTHONPATH: /var/task/site-packages
             Events:
                 ForCORS:
                     Type: Api
@@ -148,7 +148,7 @@ Resources:
             Runtime: python3.6
             Environment:
                 Variables:
-                    PARAM1: VALUE
+                    PYTHONPATH: /var/task/site-packages
             Events:
                 ForCORS:
                     Type: Api
@@ -209,7 +209,7 @@ Resources:
             Runtime: python3.6
             Environment:
                 Variables:
-                    PARAM1: VALUE
+                    PYTHONPATH: /var/task/site-packages
             Events:
                 ForCORS:
                     Type: Api
