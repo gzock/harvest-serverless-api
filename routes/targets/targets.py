@@ -5,8 +5,10 @@ import logging
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator, TargetController
 
-DYNAMO_HOST = "10.0.2.15"
-DYNAMO_PORT = "8000"
+#DYNAMO_HOST = "10.0.2.15"
+#DYNAMO_PORT = "8000"
+DYNAMO_HOST = None
+DYNAMO_PORT = None
 
 def lambda_handler(event, context):
   logger = logging.getLogger()
