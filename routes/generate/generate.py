@@ -54,7 +54,7 @@ def lambda_handler(event, context):
     pass
 
   elif req.get_method() == "POST":
-    name = req.get_body()["name"]
+    #name = req.get_body()["name"]
     # /projects/{project_id}/generate/{type}
     if gen_type in ["zip", "doc"]:
       ret = gen.create_download_link(
