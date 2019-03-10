@@ -50,6 +50,8 @@ def lambda_handler(event, context):
       "Access-Control-Allow-Origin": "*"
   }
 
+  ret = ""
+
   if req.get_method() == "GET":
     pass
 
