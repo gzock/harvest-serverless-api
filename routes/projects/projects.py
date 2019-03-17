@@ -6,6 +6,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator, ProjectController
 from decode_verify_jwt import decode_verify_jwt
 
+from harvest.make_response_utils import make_response
+
 #DYNAMO_HOST = "10.0.2.15"
 #DYNAMO_PORT = "8000"
 DYNAMO_HOST = None
@@ -49,36 +51,29 @@ def lambda_handler(event, context):
   #logger.info("requested raw_event: {}".format(req.get_raw_event()))
   
   status_code = 200
-  headers = {
-      "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",
-      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT.DELETE",
-      "Access-Control-Allow-Origin": "*"
-  }
   # /projects
-  if req.get_method() == "GET":
-    # /projects/xxxx-xxxx-xxxx-xxxx
-    if project_id:
-      ret = project.show()
-    else:
-      ret = project.list_projects()
+  try:
+    if req.get_method() == "GET":
+      # /projects/xxxx-xxxx-xxxx-xxxx
+      if project_id:
+        ret = project.show()
+      else:
+        ret = project.list_projects()
 
-  # /projects
-  elif req.get_method() == "POST":
-    name = req.get_body()["name"]
-    ret = project.create(name)
+    # /projects
+    elif req.get_method() == "POST":
+      name = req.get_body()["name"]
+      ret = project.create(name)
 
-  elif req.get_method() == "PUT":
-    ret = project.update(project_id, body)
+    elif req.get_method() == "PUT":
+      ret = project.update(project_id, body)
 
-  elif req.get_method() == "DELETE":
-    ret = project.delete(project_id)
+    elif req.get_method() == "DELETE":
+      ret = project.delete(project_id)
 
-  elif req.get_method() == "OPTIONS":
-    ret = []
+    elif req.get_method() == "OPTIONS":
+      ret = []
+  except Exception as e:
+    status_code = 400
 
-  return {
-      "statusCode": status_code,
-      "headers": headers,
-      "body": json.dumps(ret)
-  }
-
+  return make_response(status_code=status_code, body=ret)

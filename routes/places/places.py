@@ -1,10 +1,11 @@
 import os, sys
 import json
-import decimal
 import logging
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator, PlaceController, TargetController
+
+from harvest.make_response_utils import make_response
 
 #DYNAMO_HOST = "10.0.2.15"
 #DYNAMO_PORT = "8000"
@@ -49,11 +50,6 @@ def lambda_handler(event, context):
   logger.info("requested pathParams: {}".format(req.get_path_params()))
   
   status_code = 200
-  headers = {
-      "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",
-      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
-      "Access-Control-Allow-Origin": "*"
-  }
 
   if req.get_method() == "GET":
     if "place_id" in locals():
@@ -100,16 +96,4 @@ def lambda_handler(event, context):
   elif req.get_method() == "OPTIONS":
     ret = []
 
-  print(ret)
-
-  return {
-      "statusCode": status_code,
-      "headers": headers,
-      "body": json.dumps(ret, cls = DecimalEncoder)
-  }
-
-class DecimalEncoder(json.JSONEncoder):
-  def default(self, o):
-    if isinstance(o, decimal.Decimal):
-      return int(o)
-    return super(DecimalEncoder, self).default(o)
+  return make_response(status_code=status_code, body=ret)

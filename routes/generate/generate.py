@@ -5,6 +5,8 @@ import logging
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator, Generate
 
+from harvest.make_response_utils import make_response
+
 #DYNAMO_HOST = "10.0.2.15"
 #DYNAMO_PORT = "8000"
 DYNAMO_HOST = None
@@ -44,11 +46,6 @@ def lambda_handler(event, context):
   logger.info("requested pathParams: {}".format(req.get_path_params()))
   
   status_code = 200
-  headers = {
-      "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",
-      "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
-      "Access-Control-Allow-Origin": "*"
-  }
 
   ret = ""
 
@@ -74,9 +71,4 @@ def lambda_handler(event, context):
           need_download_link=True
       )
 
-  return {
-      "statusCode": status_code,
-      "headers": headers,
-      "body": json.dumps(ret)
-  }
-
+  return make_response(status_code=status_code, body=ret)
