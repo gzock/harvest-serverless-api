@@ -60,13 +60,16 @@ def lambda_handler(event, context):
     if gen_type  == "zip":
       ret = gen.gen_zip(project_id)
 
-    elif gen_type  == "excel_doc":
-      need_custom_template = req.get_body()["need_custom_template"]
-      template = req.get_body()["template"]
+    elif gen_type  == "excel-doc":
+      body = req.get_body()
+      if "need_custom_template" in body:
+        need_custom_template  = body["need_custom_template"]
+      if "template" in body:
+        template = req.get_body()["template"]
 
       ret = gen.gen_excel_doc(
-          project_id = project_id, 
-          need_cutom_template=neeed_cutom_template, 
+          project_id=project_id, 
+          need_custom_template=need_custom_template, 
           template=template, 
           need_download_link=True
       )
