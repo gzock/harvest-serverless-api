@@ -1,0 +1,6 @@
+--2019-03-16 13:58:20--  https://product-harvest-generated.s3.amazonaws.com/https%3A//product-harvest-generated.s3.amazonaws.com/b9adc495-bc14-4467-b03c-b4ecf50dffed.zip%3FAWSAccessKeyId%3DAKIAJ6Z4GQES4IMB67JA%26Signature%3DttS9VeaUJlqiZlmMR7JchIUkrEc%253D%26Expires%3D1552745579?AWSAccessKeyId=AKIAJ6Z4GQES4IMB67JA
+Resolving product-harvest-generated.s3.amazonaws.com (product-harvest-generated.s3.amazonaws.com)... 52.219.68.93
+Connecting to product-harvest-generated.s3.amazonaws.com (product-harvest-generated.s3.amazonaws.com)|52.219.68.93|:443... connected.
+HTTP request sent, awaiting response... 403 Forbidden
+2019-03-16 13:58:20 ERROR 403: Forbidden.
+

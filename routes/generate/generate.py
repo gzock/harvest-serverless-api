@@ -56,12 +56,19 @@ def lambda_handler(event, context):
     pass
 
   elif req.get_method() == "POST":
-    #name = req.get_body()["name"]
     # /projects/{project_id}/generate/{type}
-    if gen_type in ["zip", "doc"]:
-      ret = gen.create_download_link(
-          project_id=project_id,
-          gen_type=gen_type, 
+    if gen_type  == "zip":
+      ret = gen.gen_zip(project_id)
+
+    elif gen_type  == "excel_doc":
+      need_custom_template = req.get_body()["need_custom_template"]
+      template = req.get_body()["template"]
+
+      ret = gen.gen_excel_doc(
+          project_id = project_id, 
+          need_cutom_template=neeed_cutom_template, 
+          template=template, 
+          need_download_link=True
       )
 
   return {
