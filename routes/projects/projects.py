@@ -51,6 +51,7 @@ def lambda_handler(event, context):
   #logger.info("requested raw_event: {}".format(req.get_raw_event()))
   
   status_code = 200
+  ret=""
   # /projects
   try:
     if req.get_method() == "GET":
@@ -74,6 +75,7 @@ def lambda_handler(event, context):
     elif req.get_method() == "OPTIONS":
       ret = []
   except Exception as e:
+    print(e)
     status_code = 400
 
   return make_response(status_code=status_code, body=ret)
