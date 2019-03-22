@@ -54,6 +54,7 @@ def lambda_handler(event, context):
 
   elif req.get_method() == "POST":
     # /projects/{project_id}/generate/{type}
+    body = req.get_body()
     if gen_type  == "zip":
       by_name  = body["by_name"]
       ret = gen.gen_zip(
@@ -62,7 +63,6 @@ def lambda_handler(event, context):
       )
 
     elif gen_type  == "excel-doc":
-      body = req.get_body()
       has_hierarchy  = body["has_hierarchy"]
       template = req.get_body()["template"]
 
