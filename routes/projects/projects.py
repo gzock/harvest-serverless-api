@@ -64,7 +64,9 @@ def lambda_handler(event, context):
     # /projects
     elif req.get_method() == "POST":
       name = req.get_body()["name"]
-      ret = project.create(name)
+      start_on = req.get_body()["start_on"]
+      complete_on = req.get_body()["complete_on"]
+      ret = project.create(name, start_on, complete_on)
 
     elif req.get_method() == "PUT":
       ret = project.update(project_id, body)
