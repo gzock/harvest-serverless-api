@@ -3,7 +3,7 @@ import json
 import logging
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
-from harvest import RequestDecorator, ProjectController
+from harvest import RequestDecorator, ProjectController, Auth
 from decode_verify_jwt import decode_verify_jwt
 
 from harvest.make_response_utils import make_response
@@ -57,7 +57,11 @@ def lambda_handler(event, context):
     if req.get_method() == "GET":
       # /projects/xxxx-xxxx-xxxx-xxxx
       if project_id:
-        ret = project.show()
+        auth = Auth(DYNAMO_HOST, DYNAMO_PORT, user_id, project_id)
+        if auth.guard():
+          ret = project.show()
+        else:
+          status_code = 403
       else:
         ret = project.list_projects()
 
