@@ -3,7 +3,8 @@ import json
 import logging
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
-from harvest import RequestDecorator, PlaceController, TargetController
+from harvest import RequestDecorator, PlaceController, TargetController, Auth
+from decode_verify_jwt import decode_verify_jwt
 
 from harvest.make_response_utils import make_response
 
@@ -27,11 +28,14 @@ def lambda_handler(event, context):
   # prod
   # project.set_user_id(user_id)
   # dev
-  #place.set_user_id("ryo_sasaki")
-  logger.info("requested user id: {}".format(user_id))
-
-  username = req.get_username()
-  logger.info("requested user name: {}".format(username))
+  if "Authorization" in req.get_headers():
+    decoded = decode_verify_jwt(req.get_headers()["Authorization"])
+    logger.info("decoded authorization header: {}".format(decoded))
+    if decoded:
+      user_id = decoded["cognito:username"]
+      username = decoded["preferred_username"]
+      logger.info("requested user id: {}".format(user_id))
+      logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params()
   if "project_id" in path_params:
@@ -50,50 +54,67 @@ def lambda_handler(event, context):
   logger.info("requested pathParams: {}".format(req.get_path_params()))
   
   status_code = 200
+  ret = ""
 
-  if req.get_method() == "GET":
-    if "place_id" in locals():
-      if "children" in req.get_path():
-        # /projects/{project_id}/places/{place_id}/children
-        places = place.list_children(place_id)
-        targets = target.list_children(place_id)
-        ret = {
-          "places": places,
-          "targets": targets
-        }
+  try:
+    auth = Auth(DYNAMO_HOST, DYNAMO_PORT, user_id, project_id)
+    if req.get_method() == "GET":
+      if auth.guard():
+        if "place_id" in locals():
+          if "children" in req.get_path():
+            # /projects/{project_id}/places/{place_id}/children
+            places = place.list_children(place_id)
+            targets = target.list_children(place_id)
+            ret = {
+              "places": places,
+              "targets": targets
+            }
+          else:
+            # /projects/{project_id}/places/{place_id}
+            ret = place.show(place_id)
+        # /projects/{project_id}/places
+        else:
+          places = place.list_children(project_id)
+          targets = target.list_children(place_id)
+          ret = {
+            "places": places,
+            "targets": targets
+          }
       else:
+        status_code = 403
+
+    elif req.get_method() == "POST":
+      if auth.guard("worker"):
+        name = req.get_body()["name"]
         # /projects/{project_id}/places/{place_id}
-        ret = place.show(place_id)
+        if "place_id" in locals():
+          ret = place.create(name, place_id)
 
-    # /projects/{project_id}/places
-    else:
-      places = place.list_children(project_id)
-      targets = target.list_children(place_id)
-      ret = {
-        "places": places,
-        "targets": targets
-      }
+        # /projects/{project_id}/places
+        else:
+          ret = place.create(name)
+      else:
+        status_code = 403
 
-  elif req.get_method() == "POST":
-    name = req.get_body()["name"]
     # /projects/{project_id}/places/{place_id}
-    if "place_id" in locals():
-      ret = place.create(name, place_id)
+    elif req.get_method() == "PUT":
+      if auth.guard("admin"):
+        name = req.get_body()["name"]
+        ret = place.update_name(name)
+      else:
+        status_code = 403
 
-    # /projects/{project_id}/places
-    else:
-      ret = place.create(name)
+    # /projects/{project_id}/places/{place_id}
+    elif req.get_method() == "DELETE":
+      if auth.guard("admin"):
+        ret = place.delete(project_id)
+      else:
+        status_code = 403
 
-  # /projects/{project_id}/places/{place_id}
-  elif req.get_method() == "PUT":
-    name = req.get_body()["name"]
-    ret = place.update_name(name)
-
-  # /projects/{project_id}/places/{place_id}
-  elif req.get_method() == "DELETE":
-    ret = place.delete(project_id)
-
-  elif req.get_method() == "OPTIONS":
-    ret = []
+    elif req.get_method() == "OPTIONS":
+      ret = []
+  except Exception as e:
+    print(e)
+    status_code = 400
 
   return make_response(status_code=status_code, body=ret)

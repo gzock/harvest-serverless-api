@@ -54,10 +54,10 @@ def lambda_handler(event, context):
   ret=""
   # /projects
   try:
+    auth = Auth(DYNAMO_HOST, DYNAMO_PORT, user_id, project_id)
     if req.get_method() == "GET":
       # /projects/xxxx-xxxx-xxxx-xxxx
       if project_id:
-        auth = Auth(DYNAMO_HOST, DYNAMO_PORT, user_id, project_id)
         if auth.guard():
           ret = project.show()
         else:
@@ -73,10 +73,16 @@ def lambda_handler(event, context):
       ret = project.create(name, start_on, complete_on)
 
     elif req.get_method() == "PUT":
-      ret = project.update(project_id, body)
+      if auth.guard("owner"):
+        ret = project.update(project_id, body)
+      else:
+        status_code = 403
 
     elif req.get_method() == "DELETE":
-      ret = project.delete(project_id)
+      if auth.guard("owner"):
+        ret = project.delete(project_id)
+      else:
+        status_code = 403
 
     elif req.get_method() == "OPTIONS":
       ret = []

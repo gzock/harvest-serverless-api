@@ -3,7 +3,8 @@ import json
 import logging
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
-from harvest import RequestDecorator, TargetController
+from harvest import RequestDecorator, TargetController, Auth
+from decode_verify_jwt import decode_verify_jwt
 
 from harvest.make_response_utils import make_response
 
@@ -27,10 +28,14 @@ def lambda_handler(event, context):
   # project.set_user_id(user_id)
   # dev
   #place.set_user_id("ryo_sasaki")
-  logger.info("requested user id: {}".format(user_id))
-
-  username = req.get_username()
-  logger.info("requested user name: {}".format(username))
+  if "Authorization" in req.get_headers():
+    decoded = decode_verify_jwt(req.get_headers()["Authorization"])
+    logger.info("decoded authorization header: {}".format(decoded))
+    if decoded:
+      user_id = decoded["cognito:username"]
+      username = decoded["preferred_username"]
+      logger.info("requested user id: {}".format(user_id))
+      logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params()
   if "project_id" in path_params:
@@ -52,31 +57,49 @@ def lambda_handler(event, context):
   logger.info("requested pathParams: {}".format(req.get_path_params()))
   
   status_code = 200
+  ret = ""
 
-  if req.get_method() == "GET" and target_id:
+  try:
+    auth = Auth(DYNAMO_HOST, DYNAMO_PORT, user_id, project_id)
+    if req.get_method() == "GET" and target_id:
+      # /projects/{project_id}/targets/{target_id}
+      if auth.guard():
+        ret = target.show(target_id)
+      else:
+        status_code = 403
+
+    elif req.get_method() == "POST":
+      if auth.guard("worker"):
+        name = req.get_body()["name"]
+        # /projects/{project_id}/places/{place_id}/targets
+        if "place_id" in locals():
+          ret = target.create(name, place_id)
+
+        # /projects/{project_id}/targets
+        else:
+          ret = target.create(name)
+      else:
+        status_code = 403
+
     # /projects/{project_id}/targets/{target_id}
-    ret = target.show(target_id)
+    elif req.get_method() == "PUT" and target_id:
+      if auth.guard("admin"):
+        name = req.get_body()["name"]
+        ret = target.update_name(name)
+      else:
+        status_code = 403
 
-  elif req.get_method() == "POST":
-    name = req.get_body()["name"]
-    # /projects/{project_id}/places/{place_id}/targets
-    if "place_id" in locals():
-      ret = target.create(name, place_id)
+    # /projects/{project_id}/targets/{target_id}
+    elif req.get_method() == "DELETE" and target_id:
+      if auth.guard("admin"):
+        ret = target.delete(project_id)
+      else:
+        status_code = 403
 
-    # /projects/{project_id}/targets
-    else:
-      ret = target.create(name)
-
-  # /projects/{project_id}/targets/{target_id}
-  elif req.get_method() == "PUT" and target_id:
-    name = req.get_body()["name"]
-    ret = target.update_name(name)
-
-  # /projects/{project_id}/targets/{target_id}
-  elif req.get_method() == "DELETE" and target_id:
-    ret = target.delete(project_id)
-
-  elif req.get_method() == "OPTIONS":
-    ret = []
+    elif req.get_method() == "OPTIONS":
+      ret = []
+  except Exception as e:
+    print(e)
+    status_code = 400
 
   return make_response(status_code=status_code, body=ret)
