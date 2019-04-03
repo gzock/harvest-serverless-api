@@ -66,8 +66,11 @@ def lambda_handler(event, context):
           by_name  = body["by_name"]
           ret = gen.gen_zip(
               project_id=project_id, 
-              by_name=by_name
+              by_name=by_name,
+              need_download_url=True
           )
+          if isinstance(ret, str):
+            ret = {"download_url": ret}
 
         elif gen_type  == "excel-doc":
           has_hierarchy  = body["has_hierarchy"]
@@ -77,8 +80,10 @@ def lambda_handler(event, context):
               project_id=project_id, 
               has_hierarchy=has_hierarchy, 
               template=template, 
-              need_download_link=True
+              need_download_url=True
           )
+          if isinstance(ret, str):
+            ret = {"download_url": ret}
       else:
         status_code = 403
 
