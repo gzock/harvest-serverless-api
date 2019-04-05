@@ -81,7 +81,7 @@ def lambda_handler(event, context):
 
     # /projects/{project_id}/targets/{target_id}
     elif req.get_method() == "DELETE" and target_id:
-      ret = work.delete_target(project_id)
+      ret = work.delete_target(target_id)
 
     elif req.get_method() == "OPTIONS":
       ret = []
