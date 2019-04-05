@@ -4,10 +4,12 @@ import logging
 from base64 import b64encode, b64decode
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
-from harvest import RequestDecorator, PhotoController, Auth
+from harvest import RequestDecorator
+from harvest import Work
+from harvest import ActionDeniedError
 from decode_verify_jwt import decode_verify_jwt
 
-from harvest.make_response_utils import make_response
+from harvest.utils.make_response_utils import make_response
 
 #DYNAMO_HOST = "10.0.2.15"
 #DYNAMO_PORT = "8000"
@@ -19,38 +21,36 @@ def lambda_handler(event, context):
   logger.setLevel(logging.INFO)
 
   try:
-    photo = PhotoController(DYNAMO_HOST, DYNAMO_PORT)
+    work = Work(DYNAMO_HOST, DYNAMO_PORT)
     req = RequestDecorator(event)
   except Exception as e:
     raise e
 
-  user_id = req.get_identity_id()
-  # prod
-  # project.set_user_id(user_id)
-  # dev
-  #place.set_user_id("ryo_sasaki")
+  #user_id = req.get_identity_id()
   if "Authorization" in req.get_headers():
     decoded = decode_verify_jwt(req.get_headers()["Authorization"])
     logger.info("decoded authorization header: {}".format(decoded))
     if decoded:
       user_id = decoded["cognito:username"]
       username = decoded["preferred_username"]
+      work.set_user_id(user_id)
       logger.info("requested user id: {}".format(user_id))
       logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params()
   if "project_id" in path_params:
     project_id = path_params["project_id"]
-    photo.set_project_id(project_id)
+    work.set_project_id(project_id)
     logger.info("requested project_id: {}".format(project_id))
 
   if "target_id" in path_params:
     target_id = path_params["target_id"]
-    photo.set_target_id(target_id)
+    work.set_target_id(target_id)
     logger.info("requested target_id: {}".format(target_id))
 
   if "photo_id" in path_params:
     photo_id = path_params["photo_id"]
+    work.set_photo_id(photo_id)
     logger.info("requested photo_id: {}".format(photo_id))
 
   logger.info("requested http method: {}".format(req.get_method()))
@@ -61,48 +61,38 @@ def lambda_handler(event, context):
   ret = ""
 
   try:
-    auth = Auth(DYNAMO_HOST, DYNAMO_PORT, user_id, project_id)
     if req.get_method() == "GET" and target_id:
-      if auth.guard():
-        # /projects/{project_id}/targets/{target_id}/photos/{photo_id}
-        if "photo_id" in locals():
-          ret = photo.show(photo_id, encode=True)
-        else:
-          # /projects/{project_id}/targets/{target_id}/photos
-          ret = photo.list(target_id)
+      # /projects/{project_id}/targets/{target_id}/photos/{photo_id}
+      if "photo_id" in locals():
+        ret = work.show_photo(photo_id, encode=True)
       else:
-        status_code = 403
+        # /projects/{project_id}/targets/{target_id}/photos
+        ret = work.list_photo(target_id)
 
     elif req.get_method() == "POST" and target_id:
-      if auth.guard():
-        type = req.get_body()["type"]
-        enc_data = req.get_body()["data"]
-        data = b64decode(enc_data)
-        # /projects/{project_id}/targets/{target_id}/photos
-        ret = photo.create(target_id, type, data)
-      else:
-        status_code = 403
+      type = req.get_body()["type"]
+      enc_data = req.get_body()["data"]
+      data = b64decode(enc_data)
+      # /projects/{project_id}/targets/{target_id}/photos
+      ret = work.create_photo(target_id, type, data)
 
     # /projects/{project_id}/targets/{target_id}/photos/{photo_id}
     elif req.get_method() == "PUT" and target_id:
-      if auth.guard():
-        type = req.get_body()["type"]
-        ret = photo.update_adopt(target_id, type, photo_id)
-      else:
-        status_code = 403
+      type = req.get_body()["type"]
+      ret = work.update_photo(target_id, type, photo_id)
 
     # /projects/{project_id}/targets/{target_id}/photos/{photo_id}
     elif req.get_method() == "DELETE" and photo_id:
-      if auth.guard("admin"):
-        ret = photo.delete(target_id, photo_id)
-      else:
-        status_code = 403
+      ret = work.delete_photo(target_id, photo_id)
 
     elif req.get_method() == "OPTIONS":
       ret = []
 
+  except ActionDeniedError as e:
+    status_code = 403
+    ret = e
   except Exception as e:
-    print(e)
     status_code = 400
+    ret = e
 
   return make_response(status_code=status_code, body=ret)

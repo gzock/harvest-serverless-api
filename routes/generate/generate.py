@@ -1,12 +1,13 @@
 import os, sys
 import json
 import logging
+import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator, Generate, Auth
 from decode_verify_jwt import decode_verify_jwt
 
-from harvest.make_response_utils import make_response
+from harvest.utils.make_response_utils import make_response
 
 #DYNAMO_HOST = "10.0.2.15"
 #DYNAMO_PORT = "8000"

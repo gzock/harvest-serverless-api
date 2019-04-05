@@ -1,12 +1,15 @@
 import os, sys
 import json
 import logging
+import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
-from harvest import RequestDecorator, ProjectController, Auth
+from harvest import RequestDecorator
+from harvest import Project
+from harvest import ActionDeniedError
 from decode_verify_jwt import decode_verify_jwt
 
-from harvest.make_response_utils import make_response
+from harvest.utils.make_response_utils import make_response
 
 #DYNAMO_HOST = "10.0.2.15"
 #DYNAMO_PORT = "8000"
@@ -18,15 +21,12 @@ def lambda_handler(event, context):
   logger.setLevel(logging.INFO)
 
   try:
-    project = ProjectController(DYNAMO_HOST, DYNAMO_PORT)
+    project = Project(DYNAMO_HOST, DYNAMO_PORT)
     req = RequestDecorator(event)
   except Exception as e:
     raise e
 
-  user_id = req.get_identity_id()
-  # prod
-  # project.set_user_id(user_id)
-  # dev
+  #user_id = req.get_identity_id()
   if "Authorization" in req.get_headers():
     decoded = decode_verify_jwt(req.get_headers()["Authorization"])
     logger.info("decoded authorization header: {}".format(decoded))
@@ -54,14 +54,10 @@ def lambda_handler(event, context):
   ret=""
   # /projects
   try:
-    auth = Auth(DYNAMO_HOST, DYNAMO_PORT, user_id, project_id)
     if req.get_method() == "GET":
       # /projects/xxxx-xxxx-xxxx-xxxx
       if project_id:
-        if auth.guard():
-          ret = project.show()
-        else:
-          status_code = 403
+        ret = project.show_project()
       else:
         ret = project.list_projects()
 
@@ -70,24 +66,23 @@ def lambda_handler(event, context):
       name = req.get_body()["name"]
       start_on = req.get_body()["start_on"]
       complete_on = req.get_body()["complete_on"]
-      ret = project.create(name, start_on, complete_on)
+      ret = project.create_project(name, start_on, complete_on)
 
     elif req.get_method() == "PUT":
-      if auth.guard("owner"):
-        ret = project.update(project_id, body)
-      else:
-        status_code = 403
+      ret = project.update_project(project_id, body)
 
     elif req.get_method() == "DELETE":
-      if auth.guard("owner"):
-        ret = project.delete(project_id)
-      else:
-        status_code = 403
+      ret = project.delete_project(project_id)
 
     elif req.get_method() == "OPTIONS":
       ret = []
+
+  except ActionDeniedError as e:
+    status_code = 403
+    ret = e
   except Exception as e:
-    print(e)
     status_code = 400
+    ret = e
+    logger.error(traceback.format_exc())
 
   return make_response(status_code=status_code, body=ret)
