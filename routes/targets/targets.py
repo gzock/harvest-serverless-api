@@ -7,7 +7,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator
 from harvest import Work
 from harvest import ActionDeniedError
-from decode_verify_jwt import decode_verify_jwt
 
 from harvest.utils.make_response_utils import make_response
 
@@ -47,10 +46,10 @@ def lambda_handler(event, context):
     target_id = path_params["target_id"]
     work.set_target_id(target_id)
     logger.info("requested target_id: {}".format(target_id))
-
   logger.info("requested http method: {}".format(req.get_method()))
   logger.info("requested path: {}".format(req.get_path()))
   logger.info("requested pathParams: {}".format(req.get_path_params()))
+  logger.info("requested http headers: {}".format(str(req.get_headers())))
   
   status_code = 200
   ret = ""
@@ -81,13 +80,18 @@ def lambda_handler(event, context):
 
     elif req.get_method() == "OPTIONS":
       ret = []
+    logger.info("processing successfully.".format(ret))
 
   except ActionDeniedError as e:
     status_code = 403
     ret = e
+    logger.error("permission denied: {}".format(str(e)))
   except Exception as e:
     status_code = 400
     ret = e
     logger.error(traceback.format_exc())
+
+  logger.info("response body: {}".format(ret))
+  logger.info("response http status code: {}".format(status_code))
 
   return make_response(status_code=status_code, body=ret)

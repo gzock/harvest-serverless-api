@@ -5,7 +5,7 @@ import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator, Generate, Auth
-from decode_verify_jwt import decode_verify_jwt
+from harvest import ActionDeniedError
 
 from harvest.utils.make_response_utils import make_response
 
@@ -27,7 +27,6 @@ def lambda_handler(event, context):
   user_id = req.get_identity_id()
   username = req.get_username()
   if user_id and username:
-    work.set_user_id(user_id)
     logger.info("requested user id: {}".format(user_id))
     logger.info("requested user name: {}".format(username))
 
@@ -39,10 +38,10 @@ def lambda_handler(event, context):
   if "type" in path_params:
     gen_type = path_params["type"]
     logger.info("requested generate type: {}".format(gen_type))
-
   logger.info("requested http method: {}".format(req.get_method()))
   logger.info("requested path: {}".format(req.get_path()))
   logger.info("requested pathParams: {}".format(req.get_path_params()))
+  logger.info("requested http headers: {}".format(str(req.get_headers())))
   
   status_code = 200
   ret = ""
@@ -80,9 +79,18 @@ def lambda_handler(event, context):
             ret = {"download_url": ret}
       else:
         status_code = 403
+    logger.info("processing successfully.".format(ret))
 
+  except ActionDeniedError as e:
+    status_code = 403
+    ret = e
+    logger.error("permission denied: {}".format(str(e)))
   except Exception as e:
-    print(e)
     status_code = 400
+    ret = e
+    logger.error(traceback.format_exc())
+
+  logger.info("response body: {}".format(ret))
+  logger.info("response http status code: {}".format(status_code))
 
   return make_response(status_code=status_code, body=ret)

@@ -43,7 +43,6 @@ def lambda_handler(event, context):
   logger.info("requested path: {}".format(req.get_path()))
   logger.info("requested pathParams: {}".format(req.get_path_params()))
   logger.info("requested http headers: {}".format(str(req.get_headers())))
-  #logger.info("requested raw_event: {}".format(req.get_raw_event()))
   
   status_code = 200
   ret=""
@@ -71,13 +70,18 @@ def lambda_handler(event, context):
 
     elif req.get_method() == "OPTIONS":
       ret = []
+    logger.info("processing successfully.".format(ret))
 
   except ActionDeniedError as e:
     status_code = 403
     ret = e
+    logger.error("permission denied: {}".format(str(e)))
   except Exception as e:
     status_code = 400
     ret = e
     logger.error(traceback.format_exc())
+
+  logger.info("response body: {}".format(ret))
+  logger.info("response http status code: {}".format(status_code))
 
   return make_response(status_code=status_code, body=ret)
