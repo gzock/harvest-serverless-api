@@ -25,18 +25,11 @@ def lambda_handler(event, context):
     raise e
 
   user_id = req.get_identity_id()
-  # prod
-  # project.set_user_id(user_id)
-  # dev
-  #place.set_user_id("ryo_sasaki")
-  if "Authorization" in req.get_headers():
-    decoded = decode_verify_jwt(req.get_headers()["Authorization"])
-    logger.info("decoded authorization header: {}".format(decoded))
-    if decoded:
-      user_id = decoded["cognito:username"]
-      username = decoded["preferred_username"]
-      logger.info("requested user id: {}".format(user_id))
-      logger.info("requested user name: {}".format(username))
+  username = req.get_username()
+  if user_id and username:
+    work.set_user_id(user_id)
+    logger.info("requested user id: {}".format(user_id))
+    logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params()
   if "project_id" in path_params:

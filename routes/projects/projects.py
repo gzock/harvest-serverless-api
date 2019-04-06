@@ -7,7 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator
 from harvest import Project
 from harvest import ActionDeniedError
-from decode_verify_jwt import decode_verify_jwt
+#from decode_verify_jwt import decode_verify_jwt
 
 from harvest.utils.make_response_utils import make_response
 
@@ -26,17 +26,12 @@ def lambda_handler(event, context):
   except Exception as e:
     raise e
 
-  #user_id = req.get_identity_id()
-  if "Authorization" in req.get_headers():
-    decoded = decode_verify_jwt(req.get_headers()["Authorization"])
-    logger.info("decoded authorization header: {}".format(decoded))
-    if decoded:
-      user_id = decoded["cognito:username"]
-      username = decoded["preferred_username"]
-      project.set_user_id(user_id)
-      logger.info("requested user id: {}".format(user_id))
-      #username = req.get_username()
-      logger.info("requested user name: {}".format(username))
+  user_id = req.get_identity_id()
+  username = req.get_username()
+  if user_id and username:
+    project.set_user_id(user_id)
+    logger.info("requested user id: {}".format(user_id))
+    logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params() #uuidの確認
   project_id = None

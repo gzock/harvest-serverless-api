@@ -26,16 +26,12 @@ def lambda_handler(event, context):
   except Exception as e:
     raise e
 
-  #user_id = req.get_identity_id()
-  if "Authorization" in req.get_headers():
-    decoded = decode_verify_jwt(req.get_headers()["Authorization"])
-    logger.info("decoded authorization header: {}".format(decoded))
-    if decoded:
-      user_id = decoded["cognito:username"]
-      username = decoded["preferred_username"]
-      work.set_user_id(user_id)
-      logger.info("requested user id: {}".format(user_id))
-      logger.info("requested user name: {}".format(username))
+  user_id = req.get_identity_id()
+  username = req.get_username()
+  if user_id and username:
+    work.set_user_id(user_id)
+    logger.info("requested user id: {}".format(user_id))
+    logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params()
   if "project_id" in path_params:
