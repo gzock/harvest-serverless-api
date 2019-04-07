@@ -31,11 +31,12 @@ def lambda_handler(event, context):
   user_id = req.get_identity_id()
   username = req.get_username()
   if user_id and username:
-    pass
+    gen.set_user_id(user_id)
 
   path_params = req.get_path_params()
   if "project_id" in path_params:
     project_id = path_params["project_id"]
+    gen.set_project_id(project_id)
     logger.info("requested project_id: {}".format(project_id))
 
   if "type" in path_params:
