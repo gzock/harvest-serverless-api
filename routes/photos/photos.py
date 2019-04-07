@@ -61,6 +61,8 @@ def lambda_handler(event, context):
       else:
         # /projects/{project_id}/targets/{target_id}/photos
         ret = work.list_photo(target_id)
+      if isinstance(ret, str):
+        ret = {"data": ret}
 
     elif req.get_method() == "POST" and target_id:
       type = req.get_body()["type"]
@@ -80,7 +82,7 @@ def lambda_handler(event, context):
 
     elif req.get_method() == "OPTIONS":
       ret = []
-    logger.info("processing successfully. return value: {}...".format(ret[:500]))
+    logger.info("processing successfully. return value: {}...".format(str(ret)[:500]))
 
   except ActionDeniedError as e:
     status_code = 403

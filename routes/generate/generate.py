@@ -59,6 +59,7 @@ def lambda_handler(event, context):
         ret = gen.gen_zip(
             project_id=project_id, 
             by_name=by_name,
+            result_filename=project_id + ".zip",
             need_download_url=True
         )
         if isinstance(ret, str):
@@ -72,6 +73,7 @@ def lambda_handler(event, context):
             project_id=project_id, 
             has_hierarchy=has_hierarchy, 
             template=template, 
+            result_filename=project_id + ".xlsx",
             need_download_url=True
         )
         if isinstance(ret, str):
