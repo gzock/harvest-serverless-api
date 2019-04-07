@@ -51,33 +51,30 @@ def lambda_handler(event, context):
       pass
 
     elif req.get_method() == "POST":
-      if auth.guard("admin"):
-        # /projects/{project_id}/generate/{type}
-        body = req.get_body()
-        if gen_type  == "zip":
-          by_name  = body["by_name"]
-          ret = gen.gen_zip(
-              project_id=project_id, 
-              by_name=by_name,
-              need_download_url=True
-          )
-          if isinstance(ret, str):
-            ret = {"download_url": ret}
+      # /projects/{project_id}/generate/{type}
+      body = req.get_body()
+      if gen_type  == "zip":
+        by_name  = body["by_name"]
+        ret = gen.gen_zip(
+            project_id=project_id, 
+            by_name=by_name,
+            need_download_url=True
+        )
+        if isinstance(ret, str):
+          ret = {"download_url": ret}
 
-        elif gen_type  == "excel-doc":
-          has_hierarchy  = body["has_hierarchy"]
-          template = req.get_body()["template"]
+      elif gen_type  == "excel-doc":
+        has_hierarchy  = body["has_hierarchy"]
+        template = req.get_body()["template"]
 
-          ret = gen.gen_excel_doc(
-              project_id=project_id, 
-              has_hierarchy=has_hierarchy, 
-              template=template, 
-              need_download_url=True
-          )
-          if isinstance(ret, str):
-            ret = {"download_url": ret}
-      else:
-        status_code = 403
+        ret = gen.gen_excel_doc(
+            project_id=project_id, 
+            has_hierarchy=has_hierarchy, 
+            template=template, 
+            need_download_url=True
+        )
+        if isinstance(ret, str):
+          ret = {"download_url": ret}
     logger.info("processing successfully. return value: {}".format(ret))
 
   except ActionDeniedError as e:
