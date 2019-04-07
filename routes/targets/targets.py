@@ -7,17 +7,21 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator
 from harvest import Work
 from harvest import ActionDeniedError
-
 from harvest.utils.make_response_utils import make_response
 
-#DYNAMO_HOST = "10.0.2.15"
-#DYNAMO_PORT = "8000"
-DYNAMO_HOST = None
-DYNAMO_PORT = None
+DYNAMO_HOST = os.environ.get("DYNAMO_HOST")
+DYNAMO_PORT = os.environ.get("DYNAMO_PORT")
 
 def lambda_handler(event, context):
+  formatter = logging.Formatter('[%(levelname)s]\t%(asctime)s.%(msecs)dZ\t%(aws_request_id)s\t[%(module)s#%(funcName)s %(lineno)d]\t%(message)s')
+
   logger = logging.getLogger()
-  logger.setLevel(logging.INFO)
+  for handler in logger.handlers:
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.DEBUG)
+
+  logger = logging.getLogger(__name__)
+  logger.setLevel(logging.DEBUG)
 
   try:
     work = Work(DYNAMO_HOST, DYNAMO_PORT)
@@ -29,8 +33,6 @@ def lambda_handler(event, context):
   username = req.get_username()
   if user_id and username:
     work.set_user_id(user_id)
-    logger.info("requested user id: {}".format(user_id))
-    logger.info("requested user name: {}".format(username))
 
   path_params = req.get_path_params()
   if "project_id" in path_params:
@@ -46,10 +48,6 @@ def lambda_handler(event, context):
     target_id = path_params["target_id"]
     work.set_target_id(target_id)
     logger.info("requested target_id: {}".format(target_id))
-  logger.info("requested http method: {}".format(req.get_method()))
-  logger.info("requested path: {}".format(req.get_path()))
-  logger.info("requested pathParams: {}".format(req.get_path_params()))
-  logger.info("requested http headers: {}".format(str(req.get_headers())))
   
   status_code = 200
   ret = ""
@@ -80,18 +78,17 @@ def lambda_handler(event, context):
 
     elif req.get_method() == "OPTIONS":
       ret = []
-    logger.info("processing successfully.".format(ret))
+    logger.info("processing successfully. return value: {}".format(ret))
 
   except ActionDeniedError as e:
     status_code = 403
     ret = e
-    logger.error("permission denied: {}".format(str(e)))
+    logger.error("permission denied.")
+    logger.exception(e)
   except Exception as e:
     status_code = 400
     ret = e
-    logger.error(traceback.format_exc())
-
-  logger.info("response body: {}".format(ret))
-  logger.info("response http status code: {}".format(status_code))
+    logger.error("invalid request?? processing failed...")
+    logger.exception(e)
 
   return make_response(status_code=status_code, body=ret)

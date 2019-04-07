@@ -2,33 +2,26 @@ import os, sys
 import json
 import logging
 import traceback
-#from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator
 from harvest import Project
 from harvest import ActionDeniedError
-#from decode_verify_jwt import decode_verify_jwt
-
 from harvest.utils.make_response_utils import make_response
 
-#DYNAMO_HOST = "10.0.2.15"
-#DYNAMO_PORT = "8000"
-DYNAMO_HOST = None
-DYNAMO_PORT = None
+DYNAMO_HOST = os.environ.get("DYNAMO_HOST")
+DYNAMO_PORT = os.environ.get("DYNAMO_PORT")
 
 def lambda_handler(event, context):
-  formatter = '[%(levelname)s] %(asctime)s [%(module)s#%(funcName)s %(lineno)d] %(message)s'
-   
-  handler = logging.StreamHandler()
-  handler.setLevel(logging.DEBUG)
-  handler.setFormatter(logging.Formatter(formatter))
-   
+  formatter = logging.Formatter('[%(levelname)s]\t%(asctime)s.%(msecs)dZ\t%(aws_request_id)s\t[%(module)s#%(funcName)s %(lineno)d]\t%(message)s')
+
+  logger = logging.getLogger()
+  for handler in logger.handlers:
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.DEBUG)
+
   logger = logging.getLogger(__name__)
-  logger.addHandler(handler)
   logger.setLevel(logging.DEBUG)
-  logger.propagate = False
-  logging.getLogger("harvest.utils.request_decorator").addHandler(handler)
 
   try:
     project = Project(DYNAMO_HOST, DYNAMO_PORT)
@@ -40,19 +33,13 @@ def lambda_handler(event, context):
   username = req.get_username()
   if user_id and username:
     project.set_user_id(user_id)
-    logger.info("requested user id: {}".format(user_id))
-    logger.info("requested user name: {}".format(username))
 
-  path_params = req.get_path_params() #uuidの確認
+  path_params = req.get_path_params()
   project_id = None
   if "project_id" in path_params:
     project_id = path_params["project_id"]
     project.set_project_id(project_id)
     logger.info("requested project_id: {}".format(project_id))
-  logger.info("requested http method: {}".format(req.get_method()))
-  logger.info("requested path: {}".format(req.get_path()))
-  logger.info("requested pathParams: {}".format(req.get_path_params()))
-  logger.info("requested http headers: {}".format(str(req.get_headers())))
   
   status_code = 200
   ret=""
@@ -80,18 +67,17 @@ def lambda_handler(event, context):
 
     elif req.get_method() == "OPTIONS":
       ret = []
-    logger.info("processing successfully.".format(ret))
+    logger.info("processing successfully. return value: {}".format(ret))
 
   except ActionDeniedError as e:
     status_code = 403
     ret = e
-    logger.error("permission denied: {}".format(str(e)))
+    logger.error("permission denied.")
+    logger.exception(e)
   except Exception as e:
     status_code = 400
     ret = e
-    logger.error(traceback.format_exc())
-
-  logger.info("response body: {}".format(ret))
-  logger.info("response http status code: {}".format(status_code))
+    logger.error("invalid request?? processing failed...")
+    logger.exception(e)
 
   return make_response(status_code=status_code, body=ret)
