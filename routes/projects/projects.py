@@ -2,6 +2,7 @@ import os, sys
 import json
 import logging
 import traceback
+#from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator
@@ -17,8 +18,17 @@ DYNAMO_HOST = None
 DYNAMO_PORT = None
 
 def lambda_handler(event, context):
-  logger = logging.getLogger()
-  logger.setLevel(logging.INFO)
+  formatter = '[%(levelname)s] %(asctime)s [%(module)s#%(funcName)s %(lineno)d] %(message)s'
+   
+  handler = logging.StreamHandler()
+  handler.setLevel(logging.DEBUG)
+  handler.setFormatter(logging.Formatter(formatter))
+   
+  logger = logging.getLogger(__name__)
+  logger.addHandler(handler)
+  logger.setLevel(logging.DEBUG)
+  logger.propagate = False
+  logging.getLogger("harvest.utils.request_decorator").addHandler(handler)
 
   try:
     project = Project(DYNAMO_HOST, DYNAMO_PORT)
