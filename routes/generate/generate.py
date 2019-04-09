@@ -60,7 +60,7 @@ def lambda_handler(event, context):
             project_id=project_id, 
             by_name=by_name,
             result_filename=project_id + ".zip",
-            need_download_url=True
+            needs_download_url=True
         )
         if isinstance(ret, str):
           ret = {"download_url": ret}
@@ -74,7 +74,7 @@ def lambda_handler(event, context):
             has_hierarchy=has_hierarchy, 
             template=template, 
             result_filename=project_id + ".xlsx",
-            need_download_url=True
+            needs_download_url=True
         )
         if isinstance(ret, str):
           ret = {"download_url": ret}
