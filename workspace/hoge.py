@@ -1,48 +1,57 @@
 from csv import DictReader
 from uuid import uuid4
+from datetime import datetime
 
-from make_hierarchy import MakeHierarchy
+from batch_importer import BatchImporter
 
-def append_place_id(place_obj, place_id):
-  place_obj.update({"place_id": str(uuid4())})
-  return place_obj
+def make_place_obj(project_id, new_id, parent_place_id, hierarchy, name):
+  now = datetime.now().isoformat()
+  return {
+      "project_id": project_id,
+      "place_id": new_id,
+      "parent_place_id": parent_place_id,
+      "hierarchy": hierarchy,
+      "name": str(name),
+      "photos": {
+        "required": 0,
+        "results": {
+          "before": 0,
+          "after": 0,
+        }
+      },
+      "created_at": now,
+      "updated_at": now
+  }
 
-def make_relation(obj):
-  rel = []
-  for item in obj.values():
-    #print(item["parent"])
-    if item["parent"]:
-      parent_place_id = obj[item["parent"]]["place_id"]
-    rel.append(item)
+def make_target_obj(project_id, new_id, parent_place_id, name):
+  now = datetime.now().isoformat()
+  return {
+      'project_id': project_id,
+      'target_id': new_id,
+      'parent_place_id': parent_place_id,
+      'name': name,
+      'photos': {
+        'adopt': {
+          'before': "",
+          'after': ""
+        },
+        "before": [],
+        "after": []
+      },
+      'created_at': now,
+      'updated_at': now
+  }
 
-#with open("./template.csv", "r") as csv_file:
-csv_file = open("./template.csv", "r")
-f = DictReader(csv_file, delimiter=",", doublequote=True, quotechar='"', skipinitialspace=True)
+batch = BatchImporter("./template.csv")
+places, targets = batch.optimize()
 
-# parentでソートした一覧を生成
-sorted_items = sorted(f, key=lambda x: x["parent"])
+for item in places:
+  obj = make_place_obj("aaa", item["place_id"], item["parent_place_id"], item["hierarchy"], item["name"])
+  print(obj)
 
-# parent_idを生成して一覧に足す
-mapped_items = map(lambda x: append_place_id(x, str(uuid4())), sorted_items)
-
-#for item in mapped_items:
-#  print(item)
-
-print("###############")
-
-h = MakeHierarchy()
-h.set_places(mapped_items)
-items = h.get_root_places()
-
-for item in items:
-  print(item)
-
-print("#########")
-
-items2 = h.get_leaf_places()
-for i in items2:
-  print(i)
-
+for item in targets:
+  obj = make_target_obj("aaa", item["target_id"], item["parent_place_id"], item["name"])
+  print(obj)
 
 
 
