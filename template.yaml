@@ -48,7 +48,7 @@ Resources:
             Environment:
                 Variables:
                     PYTHONPATH: /var/task/site-packages
-                    #DYNAMO_HOST: "127.0.0.1"
+                    #DYNAMO_HOST: "10.0.2.15"
                     #DYNAMO_PORT: "8000"
             Events:
                 ForCORS:
@@ -106,6 +106,8 @@ Resources:
             Environment:
                 Variables:
                     PYTHONPATH: /var/task/site-packages
+                    #DYNAMO_HOST: "10.0.2.15"
+                    #DYNAMO_PORT: "8000"
             Events:
                 ForCORS:
                     Type: Api
@@ -167,6 +169,8 @@ Resources:
             Environment:
                 Variables:
                     PYTHONPATH: /var/task/site-packages
+                    #DYNAMO_HOST: "10.0.2.15"
+                    #DYNAMO_PORT: "8000"
             Events:
                 ForCORS:
                     Type: Api
@@ -228,6 +232,8 @@ Resources:
             Environment:
                 Variables:
                     PYTHONPATH: /var/task/site-packages
+                    #DYNAMO_HOST: "10.0.2.15"
+                    #DYNAMO_PORT: "8000"
             Events:
                 ForCORS:
                     Type: Api
@@ -278,6 +284,8 @@ Resources:
             Environment:
                 Variables:
                     PYTHONPATH: /var/task/site-packages
+                    #DYNAMO_HOST: "10.0.2.15"
+                    #DYNAMO_PORT: "8000"
             Events:
                 ForCORS:
                     Type: Api
