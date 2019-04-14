@@ -94,7 +94,7 @@ Resources:
                 BatchImport:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/batch-import
+                        Path: /projects/{project_id}/import
                         Method: POST
 
     PlacesFunction:

@@ -54,10 +54,15 @@ def lambda_handler(event, context):
 
     # /projects
     elif req.get_method() == "POST":
-      name = req.get_body()["name"]
-      start_on = req.get_body()["start_on"]
-      complete_on = req.get_body()["complete_on"]
-      ret = project.create_project(name, start_on, complete_on)
+      if "import" in req.get_path():
+        csv = req.get_body()["csv"]
+        ret = project.import_csv(csv, base64enc=True)
+
+      else:
+        name = req.get_body()["name"]
+        start_on = req.get_body()["start_on"]
+        complete_on = req.get_body()["complete_on"]
+        ret = project.create_project(name, start_on, complete_on)
 
     elif req.get_method() == "PUT":
       ret = project.update_project(project_id, body)
