@@ -64,6 +64,11 @@ Resources:
                     Properties:
                         Path: /projects
                         Method: post
+                ForCORS2:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}
+                        Method: options
                 GetProject:
                     Type: Api
                     Properties:
@@ -79,6 +84,16 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}
                         Method: delete
+                ForCORS3:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/batch-import
+                        Method: options
+                BatchImport:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/batch-import
+                        Method: POST
 
     PlacesFunction:
         Type: AWS::Serverless::Function
