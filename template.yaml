@@ -48,6 +48,8 @@ Resources:
             Environment:
                 Variables:
                     PYTHONPATH: /var/task/site-packages
+                    #DYNAMO_HOST: "127.0.0.1"
+                    #DYNAMO_PORT: "8000"
             Events:
                 ForCORS:
                     Type: Api
