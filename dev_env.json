@@ -1,0 +1,22 @@
+{
+  "ProjectsFunction": {
+    "DYNAMO_HOST": "10.0.2.15",
+    "DYNAMO_PORT": "8000"
+  },
+  "PlacesFunction": {
+    "DYNAMO_HOST": "10.0.2.15",
+    "DYNAMO_PORT": "8000"
+  },
+  "TargetsFunction": {
+    "DYNAMO_HOST": "10.0.2.15",
+    "DYNAMO_PORT": "8000"
+  },
+  "PhotosFunction": {
+    "DYNAMO_HOST": "10.0.2.15",
+    "DYNAMO_PORT": "8000"
+  },
+  "GenerateFunction": {
+    "DYNAMO_HOST": "10.0.2.15",
+    "DYNAMO_PORT": "8000"
+  }
+}
