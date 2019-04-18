@@ -42,7 +42,7 @@ aws dynamodb create-table \
         AttributeName=project_id,KeyType=HASH \
         AttributeName=place_id,KeyType=RANGE \
     --local-secondary-indexes IndexName=ParentPlacesIndex,KeySchema=["{AttributeName=project_id,KeyType=HASH}","{AttributeName=parent_place_id,KeyType=RANGE}"],Projection="{ProjectionType=ALL}" \
-    --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3 
+    --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=12
 echo "----------"
 
 echo "`date`  create targets table"
@@ -58,5 +58,5 @@ aws dynamodb create-table \
         AttributeName=project_id,KeyType=HASH \
         AttributeName=target_id,KeyType=RANGE \
     --local-secondary-indexes IndexName=ParentPlacesIndex,KeySchema=["{AttributeName=project_id,KeyType=HASH}","{AttributeName=parent_place_id,KeyType=RANGE}"],Projection="{ProjectionType=ALL}" \
-    --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3 
+    --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=8
 echo "----------"
