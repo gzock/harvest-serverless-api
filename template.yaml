@@ -42,6 +42,7 @@ Resources:
     ProjectsFunction:
         Type: AWS::Serverless::Function
         Properties:
+            Timeout: 120
             CodeUri: routes
             Handler: projects/projects.lambda_handler #TODO: ここを複数作る必要がある？？
             Runtime: python3.6
@@ -278,6 +279,7 @@ Resources:
     GenerateFunction:
         Type: AWS::Serverless::Function
         Properties:
+            Timeout: 120
             CodeUri: routes
             Handler: generate/generate.lambda_handler #TODO: ここを複数作る必要がある？？
             Runtime: python3.6
