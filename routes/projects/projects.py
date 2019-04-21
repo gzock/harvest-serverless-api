@@ -68,7 +68,7 @@ def lambda_handler(event, context):
       ret = project.update_project(project_id, body)
 
     elif req.get_method() == "DELETE":
-      ret = project.delete_project(project_id)
+      ret = project.delete_project()
 
     elif req.get_method() == "OPTIONS":
       ret = []
