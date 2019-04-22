@@ -1,22 +1,32 @@
 {
   "ProjectsFunction": {
     "DYNAMO_HOST": "10.0.2.15",
-    "DYNAMO_PORT": "8000"
+    "DYNAMO_PORT": "8000",
+    "S3_HOST": "10.0.2.15",
+    "S3_PORT": "9000"
   },
   "PlacesFunction": {
     "DYNAMO_HOST": "10.0.2.15",
-    "DYNAMO_PORT": "8000"
+    "DYNAMO_PORT": "8000",
+    "S3_HOST": "10.0.2.15",
+    "S3_PORT": "9000"
   },
   "TargetsFunction": {
     "DYNAMO_HOST": "10.0.2.15",
-    "DYNAMO_PORT": "8000"
+    "DYNAMO_PORT": "8000",
+    "S3_HOST": "10.0.2.15",
+    "S3_PORT": "9000"
   },
   "PhotosFunction": {
     "DYNAMO_HOST": "10.0.2.15",
-    "DYNAMO_PORT": "8000"
+    "DYNAMO_PORT": "8000",
+    "S3_HOST": "10.0.2.15",
+    "S3_PORT": "9000"
   },
   "GenerateFunction": {
     "DYNAMO_HOST": "10.0.2.15",
-    "DYNAMO_PORT": "8000"
+    "DYNAMO_PORT": "8000",
+    "S3_HOST": "10.0.2.15",
+    "S3_PORT": "9000"
   }
 }
