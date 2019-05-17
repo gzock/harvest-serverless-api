@@ -48,7 +48,12 @@ def lambda_handler(event, context):
     if req.get_method() == "GET":
       # /projects/xxxx-xxxx-xxxx-xxxx
       if project_id:
-        ret = project.show_project()
+        if "users" in req.get_path():
+          ret = project.list_users()
+        elif "join" in req.get_path():
+          ret = project.show_join_code()
+        else:
+          ret = project.show_project()
       else:
         ret = project.list_projects()
 
@@ -57,6 +62,9 @@ def lambda_handler(event, context):
       if "import" in req.get_path():
         csv = req.get_body()["csv"]
         ret = project.import_csv(csv, base64enc=True)
+
+      elif "join" in req.get_path():
+        ret = project.join_user()
 
       else:
         name = req.get_body()["name"]

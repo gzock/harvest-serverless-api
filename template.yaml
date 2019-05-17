@@ -16,6 +16,25 @@ Resources:
     #    Type: AWS::Serverless::Api
     #    Properties:
     #        StageName: Prod
+    #        GatewayResponses:
+    #          UNAUTHORIZED:
+    #            StatusCode: 401
+    #            ResponseTemplates:
+    #              "application/json": '{ "message": $context.error.messageString }'
+    #            ResponseParameters:
+    #              Paths:
+    #                path-key: "'value'"
+    #              QueryStrings:
+    #                query-string-key: "'value'"
+    #              Headers:
+    #                Access-Control-Expose-Headers: "'WWW-Authenticate'"
+    #                Access-Control-Allow-Origin: "'*'"
+    #                WWW-Authenticate: >-
+    #                  'Bearer realm="admin"'
+    #HarvestApi:
+    #    Type: AWS::Serverless::Api
+    #    Properties:
+    #        StageName: Prod
     #        DefinitionBody:
     #            securityDefinitions:
     #                cognitoUserPool:
@@ -97,6 +116,32 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/import
                         Method: POST
+                ForCORS4:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/users
+                        Method: options
+                GetUsers:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/users
+                        Method: GET
+                ForCORS5:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/join
+                        Method: options
+                GetJoinCode:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/join
+                        Method: GET
+                JoinProject:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/join
+                        Method: POST
+
 
     PlacesFunction:
         Type: AWS::Serverless::Function
