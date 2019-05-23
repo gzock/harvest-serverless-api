@@ -5,7 +5,7 @@ import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../site-packages'))
 from harvest import RequestDecorator
-from harvest import Project
+from harvest import ProjectUser
 from harvest import ActionDeniedError
 from harvest.utils.make_response_utils import make_response
 
@@ -24,7 +24,7 @@ def lambda_handler(event, context):
   logger.setLevel(logging.DEBUG)
 
   try:
-    project = Project(DYNAMO_HOST, DYNAMO_PORT)
+    project = ProjectUser(DYNAMO_HOST, DYNAMO_PORT)
     req = RequestDecorator(event)
   except Exception as e:
     raise e
