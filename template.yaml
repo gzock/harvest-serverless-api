@@ -116,7 +116,20 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/import
                         Method: POST
-                ForCORS4:
+
+    ProjectUsersFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: routes
+            Handler: projects/users.lambda_handler #TODO: ここを複数作る必要がある？？
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PYTHONPATH: /var/task/site-packages
+                    DYNAMO_HOST: ""
+                    DYNAMO_PORT: ""
+            Events:
+                ForCORS:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/users
@@ -131,7 +144,7 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/users
                         Method: POST
-                ForCORS5:
+                ForCORS2:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/users/{user_id}

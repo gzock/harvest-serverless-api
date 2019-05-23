@@ -33,6 +33,7 @@ def lambda_handler(event, context):
   username = req.get_username()
   if user_id and username:
     project.set_user_id(user_id)
+    logger.info("requested user_id: {}".format(user_id))
 
   path_params = req.get_path_params()
   project_id = None
@@ -41,35 +42,44 @@ def lambda_handler(event, context):
     project.set_project_id(project_id)
     logger.info("requested project_id: {}".format(project_id))
   
+  specified_user_id = None
+  if "user_id" in path_params:
+    specified_user_id = path_params["user_id"]
+    logger.info("requested specified user_id: {}".format(specified_user_id))
+  
   status_code = 200
   ret=""
   # /projects
   try:
     if req.get_method() == "GET":
-      # /projects/xxxx-xxxx-xxxx-xxxx
-      if project_id:
-        ret = project.show_project()
+      # /projects/xxxx/users/yyyy
+      if specified_user_id:
+        # userの情報取得
+        ret = project.show_user(specified_user_id)
 
       else:
-        ret = project.list_projects()
+        ret = project.list_users()
 
     # /projects
     elif req.get_method() == "POST":
-      if "import" in req.get_path():
-        csv = req.get_body()["csv"]
-        ret = project.import_csv(csv, base64enc=True)
-
-      else:
-        name = req.get_body()["name"]
-        start_on = req.get_body()["start_on"]
-        complete_on = req.get_body()["complete_on"]
-        ret = project.create_project(name, start_on, complete_on)
+      action = req.get_body()["action"]
+      if action == "join":
+        ret = project.join_user()
 
     elif req.get_method() == "PUT":
-      ret = project.update_project(project_id, body)
+      action = req.get_body()["action"]
+      if action == "accept":
+        ret = project.accept_user(specified_user_id)
+
+      elif action == "reject":
+        ret = project.reject_user(specified_user_id)
+
+      elif action == "update":
+        role = req.get_body()["role"]
+        ret = project.update_role(specified_user_id, role)
 
     elif req.get_method() == "DELETE":
-      ret = project.delete_project()
+      ret = project.delete_user(specified_user_id)
 
     elif req.get_method() == "OPTIONS":
       ret = []
