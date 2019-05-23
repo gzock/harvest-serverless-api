@@ -126,22 +126,31 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/users
                         Method: GET
+                CreateUser:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/users
+                        Method: POST
                 ForCORS5:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/join
+                        Path: /projects/{project_id}/users/{user_id}
                         Method: options
-                GetJoinCode:
+                GetUser:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/join
+                        Path: /projects/{project_id}/users/{user_id}
                         Method: GET
-                JoinProject:
+                UpdateUser:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/join
-                        Method: POST
-
+                        Path: /projects/{project_id}/users/{user_id}
+                        Method: PUT
+                DeleteUser:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/users/{user_id}
+                        Method: DELETE
 
     PlacesFunction:
         Type: AWS::Serverless::Function
