@@ -66,7 +66,10 @@ def lambda_handler(event, context):
         ret = project.create_project(name, start_on, complete_on)
 
     elif req.get_method() == "PUT":
-      ret = project.update_project(project_id, body)
+      name = req.get_body()["name"]
+      start_on = req.get_body()["start_on"]
+      complete_on = req.get_body()["complete_on"]
+      ret = project.update_project(name, start_on, complete_on)
 
     elif req.get_method() == "DELETE":
       ret = project.delete_project()
