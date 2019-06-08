@@ -11,7 +11,9 @@ aws dynamodb create-table \
         AttributeName=project_id,AttributeType=S \
     --key-schema \
         AttributeName=project_id,KeyType=HASH \
-    --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3
+    --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3 \
+    --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES
+
 echo "----------"
 
 echo "`date`  create roles table"
@@ -26,7 +28,9 @@ aws dynamodb create-table \
         AttributeName=project_id,KeyType=HASH \
         AttributeName=user_id,KeyType=RANGE \
     --global-secondary-indexes IndexName=UserRolesIndex,KeySchema=["{AttributeName=user_id,KeyType=HASH}"],Projection="{ProjectionType=ALL}",ProvisionedThroughput="{ReadCapacityUnits=3,WriteCapacityUnits=3}" \
-    --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3
+    --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3 \
+    --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES
+
 echo "----------"
 
 echo "`date`  create places table"
@@ -42,7 +46,8 @@ aws dynamodb create-table \
         AttributeName=project_id,KeyType=HASH \
         AttributeName=place_id,KeyType=RANGE \
     --local-secondary-indexes IndexName=ParentPlacesIndex,KeySchema=["{AttributeName=project_id,KeyType=HASH}","{AttributeName=parent_place_id,KeyType=RANGE}"],Projection="{ProjectionType=ALL}" \
-    --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=12
+    --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=12 \
+    --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES
 echo "----------"
 
 echo "`date`  create targets table"
@@ -58,5 +63,6 @@ aws dynamodb create-table \
         AttributeName=project_id,KeyType=HASH \
         AttributeName=target_id,KeyType=RANGE \
     --local-secondary-indexes IndexName=ParentPlacesIndex,KeySchema=["{AttributeName=project_id,KeyType=HASH}","{AttributeName=parent_place_id,KeyType=RANGE}"],Projection="{ProjectionType=ALL}" \
-    --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=8
+    --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=8 \
+    --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES
 echo "----------"
