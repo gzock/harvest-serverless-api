@@ -25,7 +25,7 @@
         "SizeBytes": 26,
         "StreamViewType": "NEW_AND_OLD_IMAGES"
       },
-      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899"
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/Projects/stream/2015-06-27T00:48:05.899"
     },
     {
       "eventID": "c81e728d9d4c2f636f067f89cc14862c",
@@ -60,7 +60,7 @@
         "SizeBytes": 59,
         "StreamViewType": "NEW_AND_OLD_IMAGES"
       },
-      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899"
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/Places/stream/2015-06-27T00:48:05.899"
     },
     {
       "eventID": "eccbc87e4b5ce2fe28308fd9f2a7baf3",
@@ -78,6 +78,12 @@
           "Message": {
             "S": "This item has changed"
           },
+          "photos": {
+            "adopt": {
+              "before": "hogehoge",
+              "after": "foobar"
+            }
+          },
           "Id": {
             "N": "101"
           }
@@ -87,7 +93,7 @@
         "SizeBytes": 38,
         "StreamViewType": "NEW_AND_OLD_IMAGES"
       },
-      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899"
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/Targets/stream/2015-06-27T00:48:05.899"
     }
   ]
 }
