@@ -3,6 +3,8 @@ import json
 import logging
 import traceback
 from abc import ABCMeta, abstractmethod
+from harvest.controllers.project_controller import ProjectController
+from harvest.controllers.project_user_controller import ProjectUserController
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../routes/site-packages'))
 #from harvest import Project
@@ -21,59 +23,28 @@ def lambda_handler(event, context):
   logger = logging.getLogger(__name__)
   logger.setLevel(logging.DEBUG)
 
-  #try:
-  #  project = Project(DYNAMO_HOST, DYNAMO_PORT)
-  #  req = RequestDecorator(event)
-  #except Exception as e:
-  #  raise e
-
-# 入力されたrecordsをrecordに分割
+  # 入力されたrecordsをrecordに分割
   notify = NotificationFactory()
   for record in event["Records"]:
     notify.set_stream_record(record)
     message = notify.generate()
     print(message)
-    #print(record["eventName"])
-    #print(record["dynamodb"]["Keys"])
-
-    #if "NewImage" in record["dynamodb"]:
-    #  print(record["dynamodb"]["NewImage"])
-
-    #if "OldImage" in record["dynamodb"]:
-    #  print(record["dynamodb"]["OldImage"])
 
 # それぞれの種類に分割してconveterにかましてループ
 # 出力されたメッセージを保持
 # メッセージから必要なユーザーをリストアップ
 # 必要なユーザー用にメッセージを書き込み
 # おわり
-# 
 
-#def converter(record):
-#
-#  event_name = record["eventName"]
-#  message = ""
-#  if event_name == "INSERT":
-#    message = "{username}さんによって{type}:{name}が追加されました"
-#
-#  elif event_name == "MODIFY":
-#
-#  elif event_name == "REMOVE":
 
-class NotificationFactory():
-  __stream_record = {}
+class NotificationConverter():
   __project_name = ""
   __user_name = ""
-  __created_at = ""
-  __updated_at = ""
+  factory = None
 
-  def __init_(self, project_name, user_name, stream_record):
-    self.set_stream_record(stream_record)
-    self.set_project_name(project_name)
-    self.set_user_name(user_name)
-
-  def set_stream_record(self, stream_record):
-    self.__stream_record = stream_record
+  def __init_(self, stream_record=None):
+    if stream_record:
+      self.factory = NotificationMessageFactory(stream_record)
 
   def set_project_name(self, project_name):
     self.__project_name = project_name
@@ -81,7 +52,35 @@ class NotificationFactory():
   def set_user_name(self, user_name):
     self.__user_name = user_name
 
-  def select_notification(self):
+  def input(self, stream_record):
+    self.factory = NotificationMessageFactory(stream_record)
+
+  def output(self):
+    if self.factory:
+      return self.factory.generate()
+
+
+class NotificationMessageFactory():
+  __stream_record = {}
+  __created_at = ""
+  __updated_at = ""
+
+  def __init_(self, stream_record):
+    self.set_stream_record(stream_record)
+
+    self.project = ProjectController(host, port)
+    self.user = ProjectUserController(host, port)
+
+  def set_stream_record(self, stream_record):
+    self.__stream_record = stream_record
+
+  def __get_project_name(self, project_id):
+    self.__project_name = self.project.show(project_id)
+
+  def __get_user_name(self, user_id):
+    self.__user_name = self.user.show(user_id)
+
+  def __select_notification_type(self):
     new_record = old_record = {"photos": ""}
     if "NewImage" in self.__stream_record["dynamodb"]:
       new_record = self.__stream_record["dynamodb"]["NewImage"]
@@ -112,109 +111,231 @@ class NotificationFactory():
     notification.set_src_stream_record(self.__stream_record)
     return notification
 
+  def __get_project_id(self, record)
+    return record["project_id"]
+
+  def __get_user_id(self, record)
+    if "updated_by" in record:
+      user_id = record["updated_by"]
+    elif "user_id" in record:
+      user_id = record["user_id"]
+    else:
+      raise AttributeError
+    return user_id
+
   def generate(self):
-    notification = self.select_notification()
+    notification = self.__select_notification_type()
     message = notification.message
-    return message
+    if "project_name"in message:
+      message.format_map(
+        {
+          "project_name": self.__get_project_name()
+        }
+      )
+    if "user_name"in message:
+      message.format_map(
+        {
+          "user_name": self.__get_user_name()
+        }
+      )
+    return notification.message
 
 
 
-class Notification(metaclass=ABCMeta):
-  @abstractmethod
-  def set_src_stream_record(self, record):
-    pass
+#class Notification(metaclass=ABCMeta):
+#  @abstractmethod
+#  def set_src_stream_record(self, record):
+#    pass
+
+class Notification():
+  __stream_record = {}
+  create = "{project_name}: {user_name}さんによって{type}:{name}が追加されました"
+  update = "{project_name}: {user_name}さんによって{type}:{old_name}が{name}に変更されました"
+  delete = "{project_name}: {user_name}さんによって{type}:{name}が削除されました"
+  message = ""
+  needs_strings_dict = {"project_name": "", "user_name": "", "type": ""}
+  is_insert_event = False
+  is_modify_event = False
+  is_remove_event = False
+  record = {}
+  old_record = None
+
+  def __init_(self, stream_record, host=None, port=None):
+    self.set_stream_record(stream_record)
+    self.project = ProjectController(host, port)
+    self.user = ProjectUserController(host, port)
+
+    event_name = stream_record["eventName"]
+    if event_name == "INSERT":
+      self.is_insert_event = True
+      self.record = stream_record["dynamodb"]["NewImage"]
+
+    elif event_name == "MODIFY":
+      self.is_modify_event = True
+      self.record = stream_record["dynamodb"]["NewImage"]
+      self.old_record = stream_record["dynamodb"]["OldImage"]
+
+    elif event_name == "REMOVE":
+      self.is_remove_event = True
+      self.record = stream_record["dynamodb"]["OldImage"]
+
+  def set_stream_record(self, record):
+    self.record = record
+
+  def __get_project_name(self):
+    return self.project.show(
+        self.record["project_id"]
+    )
+
+  def __get_user_name(self, user_id):
+    return  self.user.show(
+        self.record["updated_by"]
+    )
+
+  def select_message(self):
+    event_name = record["eventName"]
+    if self.is_insert_event:
+      self.message = self.create
+
+    elif self.is_modify_event:
+      self.message = self.update
+
+    elif self.is_remove_event:
+      self.message = self.delete
+    return self.message
+
+  def mapping(self):
+    self.message.format_map(
+      self.needs_strings_dict
+    )
+
+  def set_record_type(self, record_type):
+    self.need_strings_dict["type"] = record_type
+
+  def generate(self):
+    if not message():
+      self.select_message()
+    self.needs_strings_dict["project_name"] = self.__get_project_name()
+    self.needs_strings_dict["user_name"] = self.__get_user_name()
+    self.mapping()
+    return self.message
 
 class ProjectNotification(Notification):
-  create = "{user_name}さんによって{type}:{name}が追加されました"
-  update = "{user_name}さんによって{type}:{old_name}が{new_name}に変更されました"
-  delete = "{user_name}さんによって{type}:{name}が削除されました"
-  message = ""
+  update = "{project_name}: {user_name}さんによってプロジェクト名が{old_name}から{name}に変更されました"
+  delete = "{project_name}: {user_name}さんによって削除されました"
 
-  def set_src_stream_record(self, record):
-    event_name = record["eventName"]
-    if event_name == "INSERT":
-      self.message = self.create
-    elif event_name == "MODIFY":
-      self.message = self.update
-    elif event_name == "REMOVE":
-      self.message = self.delete
+  def __init__(self, host, port):
+    super().set_record_type("プロジェクト")
+    super().__init_(host, port)
+
+  def generate(self):
+    self.needs_strings_dict.update(
+      {
+        "name": self.record["name"]
+      }
+    )
+    if self.is_modify_event:
+    self.needs_strings_dict.update(
+      {
+        "old_name": self.old_record["name"]
+      }
+    )
+    return super().generate()
+
 
 class PlaceNotification():
-  create = "{project_name}: {user_name}さんによって{type}:{name}が追加されました"
-  update = "{project_name}: {user_name}さんによって{type}:{old_name}が{new_name}に変更されました"
-  delete = "{project_name}: {user_name}さんによって{type}:{name}が削除されました"
-  message = ""
 
-  def set_src_stream_record(self, record):
-    event_name = record["eventName"]
-    if event_name == "INSERT":
-      self.message = self.create
-    elif event_name == "MODIFY":
-      self.message = self.update
-    elif event_name == "REMOVE":
-      self.message = self.delete
+  def __init__(self, host, port):
+    super().set_record_type("場所")
+    super().__init_(host, port)
+
+  def generate(self):
+    self.needs_strings_dict.update(
+      {
+        "name": self.record["name"]
+      }
+    )
+    if self.is_modify_event:
+    self.needs_strings_dict.update(
+      {
+        "old_name": self.old_record["name"]
+      }
+    )
+    return super().generate()
 
 class TargetNotification():
-  create = "{project_name}: {user_name}さんによって{type}:{name}が追加されました"
-  update = "{project_name}: {user_name}さんによって{type}:{old_name}が{new_name}に変更されました"
-  delete = "{project_name}: {user_name}さんによって{type}:{name}が削除されました"
-  message = ""
 
-  def set_src_stream_record(self, record):
-    event_name = record["eventName"]
-    if event_name == "INSERT":
-      self.message = self.create
-    elif event_name == "MODIFY":
-      self.message = self.update
-    elif event_name == "REMOVE":
-      self.message = self.delete
+  def __init__(self, host, port):
+    super().set_record_type("撮影対象")
+    super().__init_(host, port)
+
+  def generate(self):
+    self.needs_strings_dict.update(
+      {
+        "name": self.record["name"]
+      }
+    )
+    if self.is_modify_event:
+    self.needs_strings_dict.update(
+      {
+        "old_name": self.old_record["name"]
+      }
+    )
+    return super().generate()
 
 class PhotoNotification():
   create = "{project_name}: {user_name}さんによって{name}の写真が撮影されました"
   update = "{project_name}: {user_name}さんによって{name}の採用写真が変更されました"
   delete = "{project_name}: {user_name}さんによって{name}の写真が削除されました"
-  message = ""
 
-  def set_src_stream_record(self, record):
-    event_name = record["eventName"]
-    if event_name == "INSERT":
-      self.message = self.create
-    elif event_name == "MODIFY":
-      self.message = self.update
-    elif event_name == "REMOVE":
-      self.message = self.delete
+  def __init__(self, host, port):
+    super().set_record_type("撮影対象")
+    super().__init_(host, port)
+
+  def generate(self):
+    self.needs_strings_dict.update(
+      {
+        "name": self.record["name"]
+      }
+    )
+    return super().generate()
 
 class ProjectUserNotification():
   accept = "{project_name}: {user_name}さんが参加しました"
   request = "{project_name}: {user_name}さんが参加を希望しています"
   delete = "{project_name}: {user_name}さんが離脱しました"
-  reject = "{project_name}: {user_name}さんによって参加を拒否されました"
-  update_role = "{project_name}: {user_name}さんによってロールが{role}に変更されました"
-  force_delete = "{project_name}: {user_name}さんによって強制的に離脱させられました"
-  message = ""
+  reject = "{project_name}: 参加を拒否されました"
+  update_role = "{project_name}: ロールが{role}に変更されました"
+  force_delete = "{project_name}: 強制的に離脱させられました"
 
-  def set_src_stream_record(self, record):
-    event_name = record["eventName"]
-    if event_name == "INSERT":
-      if new_record["status"] == "request":
+  def __init__(self, host, port):
+    super().set_record_type("ユーザー管理")
+    super().__init_(host, port)
+
+  def select_message(self):
+    event_name = self.record["eventName"]
+    if self.is_insert_event:
+      if self.record["status"] == "request":
         self.message = self.request
 
-    elif event_name == "MODIFY":
-      new_record, old_record = split_record(record)
-      if old_record["role"] != new_record["role"]:
+    elif self.is_modify_event:
+      if self.old_record["role"] != self.record["role"]:
         self.message = self.update_role
-      if (old_record["status"] == "reject" or old_record["status"] == "request") \
-          and new_record["status"] == "accept":
+      elif (self.old_record["status"] == "reject" or self.old_record["status"] == "request") \
+          and self.record["status"] == "accept":
         self.message = self.accept
-      elif new_record["status"] == "reject":
+      elif self.record["status"] == "reject":
         self.message = self.reject
 
-    elif event_name == "REMOVE":
+    elif self.is_remove_event:
       self.message = self.delete
+    return self.message
 
-  def split_record(self, record):
-    new_record = record["dynamodb"]["NewImage"]
-    old_record = {}
-    if "OldImage" in record["dynamodb"]:
-      old_record = record["dynamodb"]["OldImage"]
-    return new_record, old_record
+  def generate(self):
+    self.needs_strings_dict.update(
+      {
+        "role": self.record["role"]
+      }
+    )
+    return super().generate()
+
