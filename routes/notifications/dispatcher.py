@@ -5,12 +5,14 @@ import traceback
 from abc import ABCMeta, abstractmethod
 from harvest.controllers.project_controller import ProjectController
 from harvest.controllers.project_user_controller import ProjectUserController
+from harvest.drivers.cognito_driver import CognitoDriver
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../routes/site-packages'))
 #from harvest import Project
 
 DYNAMO_HOST = os.environ.get("DYNAMO_HOST")
 DYNAMO_PORT = os.environ.get("DYNAMO_PORT")
+COGNITO_USER_POOL_ID="ap-northeast-1_KrEPljcrG"
 
 def lambda_handler(event, context):
   formatter = logging.Formatter('[%(levelname)s]\t%(asctime)s.%(msecs)dZ\t%(aws_request_id)s\t[%(module)s#%(funcName)s %(lineno)d]\t%(message)s')
@@ -24,18 +26,17 @@ def lambda_handler(event, context):
   logger.setLevel(logging.DEBUG)
 
   # 入力されたrecordsをrecordに分割
-  notify = NotificationFactory()
+  notify = NotificationMessageFactory(DYNAMO_HOST, DYNAMO_PORT)
   for record in event["Records"]:
     notify.set_stream_record(record)
     message = notify.generate()
     print(message)
 
-# それぞれの種類に分割してconveterにかましてループ
-# 出力されたメッセージを保持
+  return
+
 # メッセージから必要なユーザーをリストアップ
 # 必要なユーザー用にメッセージを書き込み
 # おわり
-
 
 class NotificationConverter():
   __project_name = ""
@@ -64,21 +65,17 @@ class NotificationMessageFactory():
   __stream_record = {}
   __created_at = ""
   __updated_at = ""
+  host = None
+  port = None
 
-  def __init_(self, stream_record):
-    self.set_stream_record(stream_record)
-
-    self.project = ProjectController(host, port)
-    self.user = ProjectUserController(host, port)
+  def __init__(self, host, port, stream_record=None):
+    if stream_record:
+      self.set_stream_record(stream_record)
+    self.host = host
+    self.port = port
 
   def set_stream_record(self, stream_record):
     self.__stream_record = stream_record
-
-  def __get_project_name(self, project_id):
-    self.__project_name = self.project.show(project_id)
-
-  def __get_user_name(self, user_id):
-    self.__user_name = self.user.show(user_id)
 
   def __select_notification_type(self):
     new_record = old_record = {"photos": ""}
@@ -89,56 +86,30 @@ class NotificationMessageFactory():
 
     arn = self.__stream_record['eventSourceARN']
     src_table = arn.split(':')[5].split('/')[1]
-    print(src_table)
 
     notification = {}
     if src_table == "Projects":
-      notification = ProjectNotification()
+      notification = ProjectNotification(self.__stream_record, self.host, self.port)
 
     elif src_table == "Places":
-      notification = PlaceNotification()
+      notification = PlaceNotification(self.__stream_record, self.host, self.port)
 
     elif src_table == "Targets":
       
-      if old_record["photos"] == new_record["photos"]:
-        notification = PhotoNotification()
+      if old_record["photos"] != new_record["photos"]:
+        notification = PhotoNotification(self.__stream_record, self.host, self.port)
       else:
-        notification = TargetNotification()
+        notification = TargetNotification(self.__stream_record, self.host, self.port)
       
     elif src_table == "Roles":
-      notification = ProjectUserNotification()
+      notification = ProjectUserNotification(self.__stream_record, self.host, self.port)
 
-    notification.set_src_stream_record(self.__stream_record)
+    #notification.set_src_stream_record(self.__stream_record)
     return notification
-
-  def __get_project_id(self, record)
-    return record["project_id"]
-
-  def __get_user_id(self, record)
-    if "updated_by" in record:
-      user_id = record["updated_by"]
-    elif "user_id" in record:
-      user_id = record["user_id"]
-    else:
-      raise AttributeError
-    return user_id
 
   def generate(self):
     notification = self.__select_notification_type()
-    message = notification.message
-    if "project_name"in message:
-      message.format_map(
-        {
-          "project_name": self.__get_project_name()
-        }
-      )
-    if "user_name"in message:
-      message.format_map(
-        {
-          "user_name": self.__get_user_name()
-        }
-      )
-    return notification.message
+    return notification.generate()
 
 
 
@@ -160,7 +131,7 @@ class Notification():
   record = {}
   old_record = None
 
-  def __init_(self, stream_record, host=None, port=None):
+  def __init__(self, stream_record, host, port):
     self.set_stream_record(stream_record)
     self.project = ProjectController(host, port)
     self.user = ProjectUserController(host, port)
@@ -183,17 +154,18 @@ class Notification():
     self.record = record
 
   def __get_project_name(self):
-    return self.project.show(
+    project = self.project.show(
         self.record["project_id"]
     )
+    return project["name"]
 
-  def __get_user_name(self, user_id):
-    return  self.user.show(
-        self.record["updated_by"]
-    )
+  def __get_user_name(self):
+    cognito = CognitoDriver(COGNITO_USER_POOL_ID)
+    detail = cognito.show_user(self.record["updated_by"])[0]["Attributes"]
+    detail = { item["Name"]: item["Value"] for item in detail }
+    return detail["preferred_username"]
 
   def select_message(self):
-    event_name = record["eventName"]
     if self.is_insert_event:
       self.message = self.create
 
@@ -205,15 +177,15 @@ class Notification():
     return self.message
 
   def mapping(self):
-    self.message.format_map(
+    self.message = self.message.format_map(
       self.needs_strings_dict
     )
 
   def set_record_type(self, record_type):
-    self.need_strings_dict["type"] = record_type
+    self.needs_strings_dict["type"] = record_type
 
   def generate(self):
-    if not message():
+    if not self.message:
       self.select_message()
     self.needs_strings_dict["project_name"] = self.__get_project_name()
     self.needs_strings_dict["user_name"] = self.__get_user_name()
@@ -224,9 +196,9 @@ class ProjectNotification(Notification):
   update = "{project_name}: {user_name}さんによってプロジェクト名が{old_name}から{name}に変更されました"
   delete = "{project_name}: {user_name}さんによって削除されました"
 
-  def __init__(self, host, port):
+  def __init__(self, stream_record, host, port):
     super().set_record_type("プロジェクト")
-    super().__init_(host, port)
+    super().__init__(stream_record, host, port)
 
   def generate(self):
     self.needs_strings_dict.update(
@@ -235,19 +207,19 @@ class ProjectNotification(Notification):
       }
     )
     if self.is_modify_event:
-    self.needs_strings_dict.update(
-      {
-        "old_name": self.old_record["name"]
-      }
-    )
+      self.needs_strings_dict.update(
+        {
+          "old_name": self.old_record["name"]
+        }
+      )
     return super().generate()
 
 
-class PlaceNotification():
+class PlaceNotification(Notification):
 
-  def __init__(self, host, port):
+  def __init__(self, stream_record, host, port):
     super().set_record_type("場所")
-    super().__init_(host, port)
+    super().__init__(stream_record, host, port)
 
   def generate(self):
     self.needs_strings_dict.update(
@@ -256,18 +228,18 @@ class PlaceNotification():
       }
     )
     if self.is_modify_event:
-    self.needs_strings_dict.update(
-      {
-        "old_name": self.old_record["name"]
-      }
-    )
+      self.needs_strings_dict.update(
+        {
+          "old_name": self.old_record["name"]
+        }
+      )
     return super().generate()
 
-class TargetNotification():
+class TargetNotification(Notification):
 
-  def __init__(self, host, port):
+  def __init__(self, stream_record, host, port):
     super().set_record_type("撮影対象")
-    super().__init_(host, port)
+    super().__init__(stream_record, host, port)
 
   def generate(self):
     self.needs_strings_dict.update(
@@ -276,21 +248,21 @@ class TargetNotification():
       }
     )
     if self.is_modify_event:
-    self.needs_strings_dict.update(
-      {
-        "old_name": self.old_record["name"]
-      }
-    )
+      self.needs_strings_dict.update(
+        {
+          "old_name": self.old_record["name"]
+        }
+      )
     return super().generate()
 
-class PhotoNotification():
+class PhotoNotification(Notification):
   create = "{project_name}: {user_name}さんによって{name}の写真が撮影されました"
   update = "{project_name}: {user_name}さんによって{name}の採用写真が変更されました"
   delete = "{project_name}: {user_name}さんによって{name}の写真が削除されました"
 
-  def __init__(self, host, port):
+  def __init__(self, stream_record, host, port):
     super().set_record_type("撮影対象")
-    super().__init_(host, port)
+    super().__init__(stream_record, host, port)
 
   def generate(self):
     self.needs_strings_dict.update(
@@ -300,7 +272,7 @@ class PhotoNotification():
     )
     return super().generate()
 
-class ProjectUserNotification():
+class ProjectUserNotification(Notification):
   accept = "{project_name}: {user_name}さんが参加しました"
   request = "{project_name}: {user_name}さんが参加を希望しています"
   delete = "{project_name}: {user_name}さんが離脱しました"
@@ -308,9 +280,9 @@ class ProjectUserNotification():
   update_role = "{project_name}: ロールが{role}に変更されました"
   force_delete = "{project_name}: 強制的に離脱させられました"
 
-  def __init__(self, host, port):
+  def __init__(self, stream_record, host, port):
     super().set_record_type("ユーザー管理")
-    super().__init_(host, port)
+    super().__init__(stream_record, host, port)
 
   def select_message(self):
     event_name = self.record["eventName"]

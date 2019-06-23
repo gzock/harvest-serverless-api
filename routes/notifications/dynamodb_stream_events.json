@@ -13,12 +13,9 @@
           }
         },
         "NewImage": {
-          "Message": {
-            "S": "New item!"
-          },
-          "Id": {
-            "N": "101"
-          }
+          "project_id": "c392138c-da09-4c17-a86b-6cd3229a164d",
+          "name": "hogehoge",
+          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41"
         },
         "ApproximateCreationDateTime": 1428537600,
         "SequenceNumber": "4421584500000000017450439091",
@@ -40,20 +37,14 @@
           }
         },
         "NewImage": {
-          "Message": {
-            "S": "This item has changed"
-          },
-          "Id": {
-            "N": "101"
-          }
+          "project_id": "c392138c-da09-4c17-a86b-6cd3229a164d",
+          "name": "hogehoge",
+          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41"
         },
         "OldImage": {
-          "Message": {
-            "S": "New item!"
-          },
-          "Id": {
-            "N": "101"
-          }
+          "project_id": "c392138c-da09-4c17-a86b-6cd3229a164d",
+          "name": "old_foobar",
+          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41"
         },
         "ApproximateCreationDateTime": 1428537600,
         "SequenceNumber": "4421584500000000017450439092",
@@ -75,17 +66,14 @@
           }
         },
         "OldImage": {
-          "Message": {
-            "S": "This item has changed"
-          },
+          "project_id": "c392138c-da09-4c17-a86b-6cd3229a164d",
+          "name": "old_foobar",
+          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41",
           "photos": {
             "adopt": {
               "before": "hogehoge",
               "after": "foobar"
             }
-          },
-          "Id": {
-            "N": "101"
           }
         },
         "ApproximateCreationDateTime": 1428537600,
