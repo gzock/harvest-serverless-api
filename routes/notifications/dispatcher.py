@@ -8,11 +8,11 @@ from harvest.controllers.project_user_controller import ProjectUserController
 from harvest.drivers.cognito_driver import CognitoDriver
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../routes/site-packages'))
-#from harvest import Project
 
 DYNAMO_HOST = os.environ.get("DYNAMO_HOST")
 DYNAMO_PORT = os.environ.get("DYNAMO_PORT")
 COGNITO_USER_POOL_ID="ap-northeast-1_KrEPljcrG"
+ADMINS = ["owner", "admin"]
 
 def lambda_handler(event, context):
   formatter = logging.Formatter('[%(levelname)s]\t%(asctime)s.%(msecs)dZ\t%(aws_request_id)s\t[%(module)s#%(funcName)s %(lineno)d]\t%(message)s')
@@ -26,40 +26,18 @@ def lambda_handler(event, context):
   logger.setLevel(logging.DEBUG)
 
   # 入力されたrecordsをrecordに分割
+  users = ProjectUserController(DYNAMO_HOST, DYNAMO_PORT)
   notify = NotificationMessageFactory(DYNAMO_HOST, DYNAMO_PORT)
   for record in event["Records"]:
     notify.set_stream_record(record)
-    message = notify.generate()
-    print(message)
+    messages = notify.generate()
+    print("---")
+    print(messages)
+    print("---")
 
-  return
-
-# メッセージから必要なユーザーをリストアップ
 # 必要なユーザー用にメッセージを書き込み
 # おわり
-
-class NotificationConverter():
-  __project_name = ""
-  __user_name = ""
-  factory = None
-
-  def __init_(self, stream_record=None):
-    if stream_record:
-      self.factory = NotificationMessageFactory(stream_record)
-
-  def set_project_name(self, project_name):
-    self.__project_name = project_name
-
-  def set_user_name(self, user_name):
-    self.__user_name = user_name
-
-  def input(self, stream_record):
-    self.factory = NotificationMessageFactory(stream_record)
-
-  def output(self):
-    if self.factory:
-      return self.factory.generate()
-
+  return
 
 class NotificationMessageFactory():
   __stream_record = {}
@@ -76,7 +54,7 @@ class NotificationMessageFactory():
 
   def set_stream_record(self, stream_record):
     self.__stream_record = stream_record
-
+  
   def __select_notification_type(self):
     new_record = old_record = {"photos": ""}
     if "NewImage" in self.__stream_record["dynamodb"]:
@@ -104,19 +82,11 @@ class NotificationMessageFactory():
     elif src_table == "Roles":
       notification = ProjectUserNotification(self.__stream_record, self.host, self.port)
 
-    #notification.set_src_stream_record(self.__stream_record)
     return notification
 
   def generate(self):
     notification = self.__select_notification_type()
     return notification.generate()
-
-
-
-#class Notification(metaclass=ABCMeta):
-#  @abstractmethod
-#  def set_src_stream_record(self, record):
-#    pass
 
 class Notification():
   __stream_record = {}
@@ -130,11 +100,13 @@ class Notification():
   is_remove_event = False
   record = {}
   old_record = None
+  notify_users = []
 
   def __init__(self, stream_record, host, port):
-    self.set_stream_record(stream_record)
     self.project = ProjectController(host, port)
-    self.user = ProjectUserController(host, port)
+    self.users = ProjectUserController(host, port)
+    self.cognito = CognitoDriver(COGNITO_USER_POOL_ID)
+    self.set_stream_record(stream_record)
 
     event_name = stream_record["eventName"]
     if event_name == "INSERT":
@@ -150,18 +122,21 @@ class Notification():
       self.is_remove_event = True
       self.record = stream_record["dynamodb"]["OldImage"]
 
+    self.project_id = self.record["project_id"]
+    self.user_id = self.record["updated_by"]
+
   def set_stream_record(self, record):
     self.record = record
+    self.users.set_project_id(record["dynamodb"]["Keys"]["project_id"])
 
   def __get_project_name(self):
     project = self.project.show(
-        self.record["project_id"]
+        self.project_id
     )
     return project["name"]
 
   def __get_user_name(self):
-    cognito = CognitoDriver(COGNITO_USER_POOL_ID)
-    detail = cognito.show_user(self.record["updated_by"])[0]["Attributes"]
+    detail = self.cognito.show_user(self.user_id)[0]["Attributes"]
     detail = { item["Name"]: item["Value"] for item in detail }
     return detail["preferred_username"]
 
@@ -184,13 +159,44 @@ class Notification():
   def set_record_type(self, record_type):
     self.needs_strings_dict["type"] = record_type
 
+  def get_notify_users(self, target, user_id=None):
+    if target not in ["all", "admins", "specify"]:
+      # TODO: needs custom exception
+      raise ValueError
+
+    project_users = self.users.list()
+    # TODO: needs delete myself user_id
+    if target == "all":
+      pass
+    elif target == "admins":
+      filterd_users = filter(lambda user: user["role"] in ADMINS, project_users)
+      project_users = [user for user in filterd_users]
+    elif target == "specify":
+      if not user_id:
+        # TODO: needs custom exception
+        raise ValueError
+      project_users = [ {"user_id": user_id} ]
+    return project_users
+
   def generate(self):
     if not self.message:
       self.select_message()
+    if not self.notify_users:
+      self.notify_users = self.get_notify_users("all")
     self.needs_strings_dict["project_name"] = self.__get_project_name()
     self.needs_strings_dict["user_name"] = self.__get_user_name()
     self.mapping()
-    return self.message
+    ret = []
+    for user in self.notify_users:
+      ret.append(
+        {
+          "user_id": user["user_id"],
+          "project_id": self.project_id,
+          "created_at": self.record["updated_at"],
+          "message": self.message
+        }
+      )
+    return ret
 
 class ProjectNotification(Notification):
   update = "{project_name}: {user_name}さんによってプロジェクト名が{old_name}から{name}に変更されました"
@@ -289,18 +295,26 @@ class ProjectUserNotification(Notification):
     if self.is_insert_event:
       if self.record["status"] == "request":
         self.message = self.request
+        self.notify_users = self.get_notify_users("admins")
 
     elif self.is_modify_event:
       if self.old_record["role"] != self.record["role"]:
         self.message = self.update_role
+        self.notify_users = self.get_notify_users("specify", self.record["user_id"])
+
       elif (self.old_record["status"] == "reject" or self.old_record["status"] == "request") \
           and self.record["status"] == "accept":
         self.message = self.accept
+        self.notify_users = self.get_notify_users("all")
+
       elif self.record["status"] == "reject":
         self.message = self.reject
+        self.notify_users = self.get_notify_users("specify", self.record["user_id"])
 
     elif self.is_remove_event:
       self.message = self.delete
+      self.notify_users = self.get_notify_users("all")
+
     return self.message
 
   def generate(self):

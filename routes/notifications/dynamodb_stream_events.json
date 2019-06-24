@@ -8,14 +8,13 @@
       "awsRegion": "us-east-1",
       "dynamodb": {
         "Keys": {
-          "Id": {
-            "N": "101"
-          }
+          "project_id": "21c1d15d-ad64-4bd0-ab09-1f4007353536"
         },
         "NewImage": {
-          "project_id": "c392138c-da09-4c17-a86b-6cd3229a164d",
+          "project_id": "21c1d15d-ad64-4bd0-ab09-1f4007353536",
           "name": "hogehoge",
-          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41"
+          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41",
+          "updated_at": "2019-06-24T11:24:23.289809"
         },
         "ApproximateCreationDateTime": 1428537600,
         "SequenceNumber": "4421584500000000017450439091",
@@ -32,19 +31,19 @@
       "awsRegion": "us-east-1",
       "dynamodb": {
         "Keys": {
-          "Id": {
-            "N": "101"
-          }
+          "project_id": "21c1d15d-ad64-4bd0-ab09-1f4007353536"
         },
         "NewImage": {
-          "project_id": "c392138c-da09-4c17-a86b-6cd3229a164d",
+          "project_id": "21c1d15d-ad64-4bd0-ab09-1f4007353536",
           "name": "hogehoge",
-          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41"
+          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41",
+          "updated_at": "2019-06-24T11:24:23.289809"
         },
         "OldImage": {
-          "project_id": "c392138c-da09-4c17-a86b-6cd3229a164d",
+          "project_id": "21c1d15d-ad64-4bd0-ab09-1f4007353536",
           "name": "old_foobar",
-          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41"
+          "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41",
+          "updated_at": "2019-06-24T11:24:23.289809"
         },
         "ApproximateCreationDateTime": 1428537600,
         "SequenceNumber": "4421584500000000017450439092",
@@ -61,14 +60,13 @@
       "awsRegion": "us-east-1",
       "dynamodb": {
         "Keys": {
-          "Id": {
-            "N": "101"
-          }
+          "project_id": "21c1d15d-ad64-4bd0-ab09-1f4007353536"
         },
         "OldImage": {
-          "project_id": "c392138c-da09-4c17-a86b-6cd3229a164d",
+          "project_id": "21c1d15d-ad64-4bd0-ab09-1f4007353536",
           "name": "old_foobar",
           "updated_by": "23d17225-ad00-424b-afa4-068c96c49c41",
+          "updated_at": "2019-06-24T11:24:23.289809",
           "photos": {
             "adopt": {
               "before": "hogehoge",
