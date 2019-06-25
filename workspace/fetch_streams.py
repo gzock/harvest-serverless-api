@@ -1,4 +1,5 @@
 import boto3
+import json
 
 client = boto3.client(
     'dynamodbstreams',
@@ -8,12 +9,19 @@ client = boto3.client(
 
 #records = client.get_records()
 records = client.list_streams(TableName="Projects")
-print(records)
-print("--------------------")
-records = client.describe_stream(StreamArn="arn:aws:dynamodb:ddblocal:000000000000:table/Projects/stream/2019-06-10T13:29:43.394")
-print(records)
-print("--------------------")
-shade_iterator = client.get_shard_iterator(StreamArn="arn:aws:dynamodb:ddblocal:000000000000:table/Projects/stream/2019-06-10T13:29:43.394", ShardId="shardId-00000001560173383496-aaeca67b", ShardIteratorType="TRIM_HORIZON")
+#print(records)
+#print("--------------------")
+#records = client.describe_stream(StreamArn=records["Streams"][0]["StreamArn"])
+#print(records)
+#print("--------------------")
 
-records = client.get_records(ShardIterator=shade_iterator["ShardIterator"])
-print(records)
+for stream in records["Streams"]:
+  streams = client.describe_stream(StreamArn=stream["StreamArn"])
+  for shard in streams["StreamDescription"]["Shards"]:
+    shade_iterator = client.get_shard_iterator(StreamArn=streams["StreamDescription"]["StreamArn"], ShardId=shard["ShardId"], ShardIteratorType="TRIM_HORIZON")
+    images = client.get_records(ShardIterator=shade_iterator["ShardIterator"])
+    #print(images)
+    for image in images["Records"]:
+      #print(image["dynamodb"]["NewImage"])
+      print( { k:list(v.values())[0] for k, v in image["dynamodb"]["NewImage"].items() } )
+      print("--------")
