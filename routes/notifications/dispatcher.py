@@ -69,7 +69,7 @@ class NotificationMessageFactory():
     self.__stream_record = self.serialize(stream_record)
   
   def __select_notification_type(self):
-    new_record = old_record = {"photos": ""}
+    new_record = old_record = {}
     if "NewImage" in self.__stream_record["dynamodb"]:
       new_record = self.__stream_record["dynamodb"]["NewImage"]
     if "OldImage" in self.__stream_record["dynamodb"]:
@@ -87,7 +87,7 @@ class NotificationMessageFactory():
 
     elif src_table == "Targets":
       
-      if old_record["photos"] != new_record["photos"]:
+      if "photos" in old_record and old_record["photos"] != new_record["photos"]:
         notification = PhotoNotification(self.__stream_record, self.host, self.port)
       else:
         notification = TargetNotification(self.__stream_record, self.host, self.port)
