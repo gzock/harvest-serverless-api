@@ -52,8 +52,19 @@ class NotificationMessageFactory():
     self.host = host
     self.port = port
 
+  def serialize(self, stream_record):
+    if "NewImage" in stream_record["dynamodb"]:
+      stream_record["dynamodb"]["NewImage"] = { k:list(v.values())[0] for k, v in stream_record["dynamodb"]["NewImage"].items() }
+
+    if "OldImage" in stream_record["dynamodb"]:
+      stream_record["dynamodb"]["OldImage"] = { k:list(v.values())[0] for k, v in stream_record["dynamodb"]["OldImage"].items() }
+
+    if "Keys" in stream_record["dynamodb"]:
+      stream_record["dynamodb"]["Keys"] = { k:list(v.values())[0] for k, v in stream_record["dynamodb"]["Keys"].items() }
+    return stream_record
+
   def set_stream_record(self, stream_record):
-    self.__stream_record = stream_record
+    self.__stream_record = self.serialize(stream_record)
   
   def __select_notification_type(self):
     new_record = old_record = {"photos": ""}
@@ -108,6 +119,7 @@ class Notification():
     self.cognito = CognitoDriver(COGNITO_USER_POOL_ID)
     self.set_stream_record(stream_record)
 
+    print("processing stream_record: %s" % str(stream_record))
     event_name = stream_record["eventName"]
     if event_name == "INSERT":
       self.is_insert_event = True
@@ -124,6 +136,8 @@ class Notification():
 
     self.project_id = self.record["project_id"]
     self.user_id = self.record["updated_by"]
+    print("project_id: %s" % self.project_id)
+    print("user_id: %s" % self.user_id)
 
   def set_stream_record(self, record):
     self.record = record
@@ -187,15 +201,16 @@ class Notification():
     self.needs_strings_dict["user_name"] = self.__get_user_name()
     self.mapping()
     ret = []
-    for user in self.notify_users:
-      ret.append(
-        {
-          "user_id": user["user_id"],
-          "project_id": self.project_id,
-          "created_at": self.record["updated_at"],
-          "message": self.message
-        }
-      )
+    if self.message:
+      for user in self.notify_users:
+        ret.append(
+          {
+            "user_id": user["user_id"],
+            "project_id": self.project_id,
+            "created_at": self.record["updated_at"],
+            "message": self.message
+          }
+        )
     return ret
 
 class ProjectNotification(Notification):
@@ -291,7 +306,6 @@ class ProjectUserNotification(Notification):
     super().__init__(stream_record, host, port)
 
   def select_message(self):
-    event_name = self.record["eventName"]
     if self.is_insert_event:
       if self.record["status"] == "request":
         self.message = self.request
