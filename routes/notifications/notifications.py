@@ -30,17 +30,13 @@ def lambda_handler(event, context):
     raise e
 
   path_params = req.get_path_params()
-  user_id = None
-  if "user_id" in path_params:
-    user_id = req.get_identity_id()
-    username = req.get_username()
+  user_id = req.get_identity_id()
+  username = req.get_username()
+  if req.get_method() != "OPTIONS":
     if path_params["user_id"] == user_id:
       notification.set_user_id(user_id)
     else:
-      status_code = 403
-      ret = e
-      logger.error("permission denied.")
-      logger.exception(e)
+      raise ActionDeniedError
 
   notification_id = None
   if "notification_id" in path_params:
