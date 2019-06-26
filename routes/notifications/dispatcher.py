@@ -2,11 +2,13 @@ import os, sys
 import json
 import logging
 import traceback
+from uuid import uuid4, UUID
 from datetime import datetime
 
 from abc import ABCMeta, abstractmethod
 from harvest.controllers.project_controller import ProjectController
 from harvest.controllers.project_user_controller import ProjectUserController
+from harvest.controllers.notification_controller import NotificationController
 from harvest.drivers.cognito_driver import CognitoDriver
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../routes/site-packages'))
@@ -28,20 +30,18 @@ def lambda_handler(event, context):
   logger.setLevel(logging.DEBUG)
 
   # 入力されたrecordsをrecordに分割
-  users = ProjectUserController(DYNAMO_HOST, DYNAMO_PORT)
-  notify = NotificationMessageFactory(DYNAMO_HOST, DYNAMO_PORT)
+  notifications = []
+  controller = NotificationController(DYNAMO_HOST, DYNAMO_PORT)
+  factory = NotificationFactory(DYNAMO_HOST, DYNAMO_PORT)
   for record in event["Records"]:
-    notify.set_stream_record(record)
-    messages = notify.generate()
-    print("---")
-    print(messages)
-    print("---")
-
-# 必要なユーザー用にメッセージを書き込み
-# おわり
+    factory.set_stream_record(record)
+    notifications.extend(factory.generate())
+  controller.batch_create(notifications)
+  #for item in notifications:
+  #  print(item)
   return
 
-class NotificationMessageFactory():
+class NotificationFactory():
   __stream_record = {}
   __created_at = ""
   __updated_at = ""
@@ -203,14 +203,18 @@ class Notification():
     self.needs_strings_dict["user_name"] = self.__get_user_name()
     self.mapping()
     ret = []
+    new_id = str(uuid4())
     if self.message:
       for user in self.notify_users:
         ret.append(
           {
             "user_id": user["user_id"],
+            "notification_id": new_id,
             "project_id": self.project_id,
             "created_at": self.record["updated_at"],
-            "message": self.message
+            "updated_at": self.record["updated_at"],
+            "message": self.message,
+            "read": False
           }
         )
     return ret

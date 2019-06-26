@@ -378,6 +378,48 @@ Resources:
                     PYTHONPATH: /var/task/site-packages
                     DYNAMO_HOST: ""
                     DYNAMO_PORT: ""
+    NotificationsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: routes
+            Handler: notifications/notifications.lambda_handler
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PYTHONPATH: /var/task/site-packages
+                    DYNAMO_HOST: ""
+                    DYNAMO_PORT: ""
+            Events:
+                ForCORS:
+                    Type: Api
+                    Properties:
+                        Path: /users/{user_id}/notifications
+                        Method: options
+                GetAllNotifications:
+                    Type: Api
+                    Properties:
+                        Path: /users/{user_id}/notifications
+                        Method: get
+                ForCORS2:
+                    Type: Api
+                    Properties:
+                        Path: /users/{user_id}/notifications/{notification_id}
+                        Method: options
+                GetNotification:
+                    Type: Api
+                    Properties:
+                        Path: /users/{user_id}/notifications/{notification_id}
+                        Method: get
+                ReadNotification:
+                    Type: Api
+                    Properties:
+                        Path: /users/{user_id}/notifications/{notification_id}
+                        Method: put
+                DeleteNotification:
+                    Type: Api
+                    Properties:
+                        Path: /users/{user_id}/notifications/{notification_id}
+                        Method: delete
 #    HarvestApi:
 #        Type: AWS::Serverless::Api
 #        Properties:
