@@ -29,16 +29,15 @@ def lambda_handler(event, context):
   logger = logging.getLogger(__name__)
   logger.setLevel(logging.DEBUG)
 
-  # 入力されたrecordsをrecordに分割
   notifications = []
   controller = NotificationController(DYNAMO_HOST, DYNAMO_PORT)
   factory = NotificationFactory(DYNAMO_HOST, DYNAMO_PORT)
   for record in event["Records"]:
     factory.set_stream_record(record)
-    notifications.extend(factory.generate())
+    ret = factory.generate()
+    if ret:
+      notifications.extend(ret)
   controller.batch_create(notifications)
-  #for item in notifications:
-  #  print(item)
   return
 
 class NotificationFactory():
@@ -99,7 +98,8 @@ class NotificationFactory():
 
   def generate(self):
     notification = self.__select_notification_type()
-    return notification.generate()
+    if isinstance(notification, Notification):
+      return notification.generate()
 
 class Notification():
   __stream_record = {}
@@ -278,6 +278,22 @@ class PlaceNotification(Notification):
   def __init__(self, stream_record, host, port):
     super().set_record_type("場所")
     super().__init__(stream_record, host, port)
+ 
+  def select_message(self):
+    if self.is_insert_event:
+      self.message = self.create
+      self.notify_users = self.get_notify_users("all")
+
+    elif self.is_modify_event:
+      if self.old_record["name"] != self.record["name"]:
+        self.message = self.update
+        self.notify_users = self.get_notify_users("all")
+
+    elif self.is_remove_event:
+      self.message = self.delete
+      self.notify_users = self.get_notify_users("all")
+
+    return self.message
 
   def generate(self):
     self.needs_strings_dict.update(
