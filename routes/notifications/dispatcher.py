@@ -2,6 +2,8 @@ import os, sys
 import json
 import logging
 import traceback
+from datetime import datetime
+
 from abc import ABCMeta, abstractmethod
 from harvest.controllers.project_controller import ProjectController
 from harvest.controllers.project_user_controller import ProjectUserController
@@ -214,27 +216,58 @@ class Notification():
     return ret
 
 class ProjectNotification(Notification):
-  update = "{project_name}: {user_name}さんによってプロジェクト名が{old_name}から{name}に変更されました"
+  update_name = "{project_name}: {user_name}さんによってプロジェクト名が{old_name}から{name}に変更されました"
+  update_start_on = "{project_name}: {user_name}さんによってプロジェクトの開始日が{old_date}から{date}に変更されました"
+  update_complete_on = "{project_name}: {user_name}さんによってプロジェクトの終了日が{old_date}から{date}に変更されました"
   delete = "{project_name}: {user_name}さんによって削除されました"
 
   def __init__(self, stream_record, host, port):
     super().set_record_type("プロジェクト")
     super().__init__(stream_record, host, port)
 
-  def generate(self):
-    self.needs_strings_dict.update(
-      {
-        "name": self.record["name"]
-      }
-    )
-    if self.is_modify_event:
+  def iso8601_to_simple(self, iso8601):
+    dt = datetime.strptime(iso8601, '%Y-%m-%dT%H:%M:%S.%fZ')
+    return dt.strftime("%Y/%m/%d")
+
+  def select_message(self):
+    if self.is_insert_event:
+      pass
+
+    elif self.is_modify_event:
+      if self.old_record["name"] != self.record["name"]:
+        self.message = self.update_name
+        self.needs_strings_dict.update(
+          {
+            "old_name": self.old_record["name"]
+          }
+        )
+
+      elif self.old_record["start_on"] != self.record["start_on"]:
+        self.message = self.update_start_on
+        self.needs_strings_dict.update(
+          {
+            "old_date": self.iso8601_to_simple(self.old_record["start_on"]),
+            "date": self.iso8601_to_simple(self.record["start_on"])
+          }
+        )
+
+      elif self.old_record["complete_on"] != self.record["complete_on"]:
+        self.message = self.update_start_on
+        self.needs_strings_dict.update(
+          {
+            "old_date": self.iso8601_to_simple(self.old_record["complete_on"]),
+            "date": self.iso8601_to_simple(self.record["complete_on"])
+          }
+        )
+
+    elif self.is_remove_event:
+      self.message = self.delete
       self.needs_strings_dict.update(
         {
-          "old_name": self.old_record["name"]
+          "name": self.record["name"]
         }
       )
-    return super().generate()
-
+    self.notify_users = self.get_notify_users("all")
 
 class PlaceNotification(Notification):
 
