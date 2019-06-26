@@ -66,3 +66,17 @@ aws dynamodb create-table \
     --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=8 \
     --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES
 echo "----------"
+
+echo "`date`  create notifications table"
+echo "----------"
+aws dynamodb create-table \
+    --endpoint-url http://localhost:8000 \
+    --table-name Notifications \
+    --attribute-definitions \
+        AttributeName=user_id,AttributeType=S \
+        AttributeName=notification_id,AttributeType=S \
+    --key-schema \
+        AttributeName=user_id,KeyType=HASH \
+        AttributeName=notification_id,KeyType=RANGE \
+    --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3
+echo "----------"
