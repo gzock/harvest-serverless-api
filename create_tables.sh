@@ -79,4 +79,8 @@ aws dynamodb create-table \
         AttributeName=user_id,KeyType=HASH \
         AttributeName=notification_id,KeyType=RANGE \
     --provisioned-throughput ReadCapacityUnits=3,WriteCapacityUnits=3
+aws dynamodb update-time-to-live \
+    --endpoint-url http://localhost:8000 \
+    --table-name Notifications \
+    --time-to-live-specification "Enabled=true, AttributeName=ttl"
 echo "----------"
