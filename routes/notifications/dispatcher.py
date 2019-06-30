@@ -5,13 +5,6 @@ import traceback
 from harvest.controllers.notification_controller import NotificationController
 from harvest.factories.notification_factory import NotificationFactory
 
-from harvest.commons.notifications.notification import Notificaton
-from harvest.commons.notifications.photo_notification import PhotoNotification
-from harvest.commons.notifications.place_notification import PlaceNotification
-from harvest.commons.notifications.project_notification import ProjectNotification
-from harvest.commons.notifications.project_user_notification import ProjectUserNotification
-from harvest.commons.notifications.target_notification import TargetNotification
-
 DYNAMO_HOST = os.environ.get("DYNAMO_HOST")
 DYNAMO_PORT = os.environ.get("DYNAMO_PORT")
 
