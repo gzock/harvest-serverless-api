@@ -58,9 +58,17 @@ def lambda_handler(event, context):
 
     elif req.get_method() == "PUT":
       read = req.get_body()["read"]
-      ret = notification.update_notification(read)
+      if "notification_ids" in req.get_body():
+        notification_ids = req.get_body()["notification_ids"]
+        ret = notification.update_notification(read, notification_ids=notification_ids)
+      else:
+        ret = notification.update_notification(read)
 
     elif req.get_method() == "DELETE":
+      #if "notification_ids" in req.get_body():
+      #  notification_ids = req.get_body()["notification_ids"]
+      #  ret = notification.delete_notification(notification_ids=notification_ids)
+      #else:
       ret = notification.delete_notification()
 
     elif req.get_method() == "OPTIONS":

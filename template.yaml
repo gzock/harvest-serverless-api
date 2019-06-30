@@ -400,6 +400,16 @@ Resources:
                     Properties:
                         Path: /users/{user_id}/notifications
                         Method: get
+                ReadNotifications:
+                    Type: Api
+                    Properties:
+                        Path: /users/{user_id}/notifications
+                        Method: put
+                DeleteNotifications:
+                    Type: Api
+                    Properties:
+                        Path: /users/{user_id}/notifications
+                        Method: delete
                 ForCORS2:
                     Type: Api
                     Properties:
