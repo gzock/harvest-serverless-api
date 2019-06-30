@@ -369,7 +369,7 @@ Resources:
     NotificationsDispatcherFunction:
         Type: AWS::Serverless::Function
         Properties:
-            Timeout: 10
+            Timeout: 60
             CodeUri: routes
             Handler: notifications/dispatcher.lambda_handler #TODO: ここを複数作る必要がある？？
             Runtime: python3.6
@@ -378,6 +378,35 @@ Resources:
                     PYTHONPATH: /var/task/site-packages
                     DYNAMO_HOST: ""
                     DYNAMO_PORT: ""
+            Events:
+                ProjectsTableTrigger:
+                    Type: DynamoDB
+                    Properties:
+                      Stream: arn:aws:dynamodb:us-east-1:123456789012:table/TestTable/stream/2016-08-11T21:21:33.291
+                      StartingPosition: TRIM_HORIZON
+                      BatchSize: 10
+                      Enabled: false
+                PlacesTableTrigger:
+                    Type: DynamoDB
+                    Properties:
+                      Stream: arn:aws:dynamodb:us-east-1:123456789012:table/TestTable/stream/2016-08-11T21:21:33.291
+                      StartingPosition: TRIM_HORIZON
+                      BatchSize: 10
+                      Enabled: false
+                TargetsTableTrigger:
+                    Type: DynamoDB
+                    Properties:
+                      Stream: arn:aws:dynamodb:us-east-1:123456789012:table/TestTable/stream/2016-08-11T21:21:33.291
+                      StartingPosition: TRIM_HORIZON
+                      BatchSize: 10
+                      Enabled: false
+                RolesTableTrigger:
+                    Type: DynamoDB
+                    Properties:
+                      Stream: arn:aws:dynamodb:us-east-1:123456789012:table/TestTable/stream/2016-08-11T21:21:33.291
+                      StartingPosition: TRIM_HORIZON
+                      BatchSize: 10
+                      Enabled: false
     NotificationsFunction:
         Type: AWS::Serverless::Function
         Properties:
