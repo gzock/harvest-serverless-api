@@ -24,6 +24,7 @@ def lambda_handler(event, context):
   logger.setLevel(logging.DEBUG)
 
   try:
+    print(dir(Notification))
     notification = Notification(DYNAMO_HOST, DYNAMO_PORT)
     req = RequestDecorator(event)
   except Exception as e:
