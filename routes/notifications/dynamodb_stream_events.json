@@ -5,15 +5,15 @@
       "dynamodb": {
         "Keys": {
           "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
+            "S": "7353182a-1843-49c7-8344-ac0a7b06a3bb"
           }
         },
         "NewImage": {
           "complete_on": {
-            "S": "2019-07-04T15:00:00.000Z"
+            "S": "2019-08-30T15:00:00.000Z"
           },
           "created_at": {
-            "S": "2019-06-30T00:23:02.635423"
+            "S": "2019-06-30T07:23:46.530677"
           },
           "created_by": {
             "S": "23d17225-ad00-424b-afa4-068c96c49c41"
@@ -22,13 +22,13 @@
             "S": "test"
           },
           "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
+            "S": "7353182a-1843-49c7-8344-ac0a7b06a3bb"
           },
           "start_on": {
-            "S": "2019-06-29T15:00:00.000Z"
+            "S": "2019-06-30T15:00:00.000Z"
           },
           "updated_at": {
-            "S": "2019-06-30T00:23:02.635423"
+            "S": "2019-06-30T07:23:46.530677"
           },
           "updated_by": {
             "S": "23d17225-ad00-424b-afa4-068c96c49c41"
@@ -38,7 +38,7 @@
         "SizeBytes": 331,
         "StreamViewType": "NEW_AND_OLD_IMAGES"
       },
-      "eventID": "fee9a901-9fd7-481d-8f73-193c65d71726",
+      "eventID": "b9c12150-d566-40c7-95b5-b7613273ea07",
       "eventName": "INSERT",
       "eventSource": "aws:dynamodb",
       "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/Projects/stream/2015-06-27T00:48:05.899",
@@ -49,27 +49,27 @@
       "dynamodb": {
         "Keys": {
           "place_id": {
-            "S": "438e40d7-0afb-46eb-92f8-70f123e0de5c"
+            "S": "298ef704-fc0d-4c6d-b0c0-acbb0e735721"
           },
           "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
+            "S": "7353182a-1843-49c7-8344-ac0a7b06a3bb"
           }
         },
         "NewImage": {
           "created_at": {
-            "S": "2019-06-30T00:24:44.184056"
+            "S": "2019-06-30T07:24:28.656983"
           },
           "created_by": {
             "S": "23d17225-ad00-424b-afa4-068c96c49c41"
           },
           "hierarchy": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
+            "S": "7353182a-1843-49c7-8344-ac0a7b06a3bb"
           },
           "name": {
             "S": "place_1"
           },
           "parent_place_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
+            "S": "7353182a-1843-49c7-8344-ac0a7b06a3bb"
           },
           "photos": {
             "M": {
@@ -89,13 +89,13 @@
             }
           },
           "place_id": {
-            "S": "438e40d7-0afb-46eb-92f8-70f123e0de5c"
+            "S": "298ef704-fc0d-4c6d-b0c0-acbb0e735721"
           },
           "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
+            "S": "7353182a-1843-49c7-8344-ac0a7b06a3bb"
           },
           "updated_at": {
-            "S": "2019-06-30T00:24:44.184056"
+            "S": "2019-06-30T07:24:28.656983"
           },
           "updated_by": {
             "S": "23d17225-ad00-424b-afa4-068c96c49c41"
@@ -105,74 +105,7 @@
         "SizeBytes": 496,
         "StreamViewType": "NEW_AND_OLD_IMAGES"
       },
-      "eventID": "417165f3-ccb5-4a44-8430-37c3a95cd230",
-      "eventName": "INSERT",
-      "eventSource": "aws:dynamodb",
-      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/Places/stream/2015-06-27T00:48:05.899",
-      "eventVersion": "1.1"
-    },
-    {
-      "awsRegion": "ddblocal",
-      "dynamodb": {
-        "Keys": {
-          "place_id": {
-            "S": "a3e5e007-501d-4ecc-a3ac-aac0ab5d2b23"
-          },
-          "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
-          }
-        },
-        "NewImage": {
-          "created_at": {
-            "S": "2019-06-30T00:24:59.985439"
-          },
-          "created_by": {
-            "S": "23d17225-ad00-424b-afa4-068c96c49c41"
-          },
-          "hierarchy": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
-          },
-          "name": {
-            "S": "place_2"
-          },
-          "parent_place_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
-          },
-          "photos": {
-            "M": {
-              "required": {
-                "N": "0"
-              },
-              "results": {
-                "M": {
-                  "after": {
-                    "N": "0"
-                  },
-                  "before": {
-                    "N": "0"
-                  }
-                }
-              }
-            }
-          },
-          "place_id": {
-            "S": "a3e5e007-501d-4ecc-a3ac-aac0ab5d2b23"
-          },
-          "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
-          },
-          "updated_at": {
-            "S": "2019-06-30T00:24:59.985439"
-          },
-          "updated_by": {
-            "S": "23d17225-ad00-424b-afa4-068c96c49c41"
-          }
-        },
-        "SequenceNumber": "000000000000000000007",
-        "SizeBytes": 496,
-        "StreamViewType": "NEW_AND_OLD_IMAGES"
-      },
-      "eventID": "33f963c4-3153-450a-9b01-5daea351e635",
+      "eventID": "9c586c80-393f-476e-adc4-055827ea0808",
       "eventName": "INSERT",
       "eventSource": "aws:dynamodb",
       "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/Places/stream/2015-06-27T00:48:05.899",
@@ -183,74 +116,7 @@
       "dynamodb": {
         "Keys": {
           "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
-          },
-          "target_id": {
-            "S": "ad26e3e8-829a-4aa4-b66f-93ffd01ed92b"
-          }
-        },
-        "NewImage": {
-          "created_at": {
-            "S": "2019-06-30T00:25:18.855509"
-          },
-          "created_by": {
-            "S": "23d17225-ad00-424b-afa4-068c96c49c41"
-          },
-          "name": {
-            "S": "target_1"
-          },
-          "parent_place_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
-          },
-          "photos": {
-            "M": {
-              "adopt": {
-                "M": {
-                  "after": {
-                    "NULL": true
-                  },
-                  "before": {
-                    "NULL": true
-                  }
-                }
-              },
-              "after": {
-                "L": []
-              },
-              "before": {
-                "L": []
-              }
-            }
-          },
-          "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
-          },
-          "target_id": {
-            "S": "ad26e3e8-829a-4aa4-b66f-93ffd01ed92b"
-          },
-          "updated_at": {
-            "S": "2019-06-30T00:25:18.855509"
-          },
-          "updated_by": {
-            "S": "23d17225-ad00-424b-afa4-068c96c49c41"
-          }
-        },
-        "SequenceNumber": "000000000000000000008",
-        "SizeBytes": 461,
-        "StreamViewType": "NEW_AND_OLD_IMAGES"
-      },
-      "eventID": "95b23b1e-8e33-4cb4-a3f1-9a381bd94931",
-      "eventName": "INSERT",
-      "eventSource": "aws:dynamodb",
-      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/Targets/stream/2015-06-27T00:48:05.899",
-      "eventVersion": "1.1"
-    },
-    {
-      "awsRegion": "ddblocal",
-      "dynamodb": {
-        "Keys": {
-          "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
+            "S": "7353182a-1843-49c7-8344-ac0a7b06a3bb"
           },
           "user_id": {
             "S": "23d17225-ad00-424b-afa4-068c96c49c41"
@@ -258,13 +124,13 @@
         },
         "NewImage": {
           "created_at": {
-            "S": "2019-06-30T00:23:02.781397"
+            "S": "2019-06-30T07:23:46.676474"
           },
           "created_by": {
             "S": "23d17225-ad00-424b-afa4-068c96c49c41"
           },
           "project_id": {
-            "S": "6069e424-b9f8-4399-8880-aa260d37077d"
+            "S": "7353182a-1843-49c7-8344-ac0a7b06a3bb"
           },
           "role": {
             "S": "owner"
@@ -273,7 +139,7 @@
             "S": "active"
           },
           "updated_at": {
-            "S": "2019-06-30T00:23:02.781397"
+            "S": "2019-06-30T07:23:46.676474"
           },
           "updated_by": {
             "S": "23d17225-ad00-424b-afa4-068c96c49c41"
@@ -286,7 +152,7 @@
         "SizeBytes": 363,
         "StreamViewType": "NEW_AND_OLD_IMAGES"
       },
-      "eventID": "330873f9-1221-4c9f-bbe9-647cfdb26fbb",
+      "eventID": "30af9401-c295-44f0-99d0-afad873d9588",
       "eventName": "INSERT",
       "eventSource": "aws:dynamodb",
       "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/Roles/stream/2015-06-27T00:48:05.899",
