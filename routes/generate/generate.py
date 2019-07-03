@@ -55,12 +55,17 @@ def lambda_handler(event, context):
       # /projects/{project_id}/generate/{type}
       body = req.get_body()
       if gen_type  == "zip":
-        by_name  = body["by_name"]
+        by_name = body["by_name"]
+        if "char_enc" in body:
+          char_enc = body["char_enc"]
+        else:
+          char_enc = "utf_8"
         ret = gen.gen_zip(
             project_id=project_id, 
             by_name=by_name,
             result_filename=project_id + ".zip",
-            needs_download_url=True
+            needs_download_url=True,
+            char_enc=char_enc
         )
         if isinstance(ret, str):
           ret = {"download_url": ret}
