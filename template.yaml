@@ -371,7 +371,7 @@ Resources:
         Properties:
             Timeout: 60
             CodeUri: routes
-            Handler: notifications/dispatcher.lambda_handler #TODO: ここを複数作る必要がある？？
+            Handler: notifications/dispatcher.lambda_handler
             Runtime: python3.6
             Environment:
                 Variables:
@@ -382,31 +382,31 @@ Resources:
                 ProjectsTableTrigger:
                     Type: DynamoDB
                     Properties:
-                      Stream: arn:aws:dynamodb:us-east-1:123456789012:table/TestTable/stream/2016-08-11T21:21:33.291
+                      Stream: arn:aws:dynamodb:ap-northeast-1:405369695225:table/Projects/stream/2019-07-02T23:03:16.181
                       StartingPosition: TRIM_HORIZON
                       BatchSize: 10
-                      Enabled: false
+                      Enabled: true
                 PlacesTableTrigger:
                     Type: DynamoDB
                     Properties:
-                      Stream: arn:aws:dynamodb:us-east-1:123456789012:table/TestTable/stream/2016-08-11T21:21:33.291
+                      Stream: arn:aws:dynamodb:ap-northeast-1:405369695225:table/Places/stream/2019-07-02T23:03:10.927
                       StartingPosition: TRIM_HORIZON
                       BatchSize: 10
-                      Enabled: false
+                      Enabled: true
                 TargetsTableTrigger:
                     Type: DynamoDB
                     Properties:
-                      Stream: arn:aws:dynamodb:us-east-1:123456789012:table/TestTable/stream/2016-08-11T21:21:33.291
+                      Stream: arn:aws:dynamodb:ap-northeast-1:405369695225:table/Targets/stream/2019-07-02T23:03:23.106
                       StartingPosition: TRIM_HORIZON
                       BatchSize: 10
-                      Enabled: false
+                      Enabled: true
                 RolesTableTrigger:
                     Type: DynamoDB
                     Properties:
-                      Stream: arn:aws:dynamodb:us-east-1:123456789012:table/TestTable/stream/2016-08-11T21:21:33.291
+                      Stream: arn:aws:dynamodb:ap-northeast-1:405369695225:table/Roles/stream/2019-07-02T23:03:19.811
                       StartingPosition: TRIM_HORIZON
                       BatchSize: 10
-                      Enabled: false
+                      Enabled: true
     NotificationsFunction:
         Type: AWS::Serverless::Function
         Properties:
