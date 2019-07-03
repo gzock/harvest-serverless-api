@@ -33,5 +33,6 @@ def lambda_handler(event, context):
     if notifications:
       controller.batch_create(notifications)
   except Exception as e:
-    logger.error("execution general error... processing failed. reason: %s" % e.message)
+    logger.error("execution general error... processing failed.")
+    logger.exception(e)
   return
