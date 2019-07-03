@@ -22,12 +22,16 @@ def lambda_handler(event, context):
   notifications = []
   controller = NotificationController(DYNAMO_HOST, DYNAMO_PORT)
   factory = NotificationFactory(DYNAMO_HOST, DYNAMO_PORT)
-  for record in event["Records"]:
-    logger.info("processing target record: %s" % str(record))
-    factory.set_stream_record(record)
-    ret = factory.generate()
-    logger.info("genereted notification body: %s" % str(ret))
-    if ret:
-      notifications.extend(ret)
-  controller.batch_create(notifications)
+  try:
+    for record in event["Records"]:
+      logger.info("processing target record: %s" % str(record))
+      factory.set_stream_record(record)
+      ret = factory.generate()
+      logger.info("genereted notification body: %s" % str(ret))
+      if ret:
+        notifications.extend(ret)
+    if notifications:
+      controller.batch_create(notifications)
+  except Exception as e:
+    logger.error("execution general error... processing failed. reason: %s" % e.message)
   return
