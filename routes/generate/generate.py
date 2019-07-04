@@ -84,12 +84,17 @@ def lambda_handler(event, context):
           ret = {"download_url": ret}
 
       elif gen_type  == "excel-doc":
-        has_hierarchy  = body["has_hierarchy"]
         template = req.get_body()["template"]
+        if "needs_include_hierarchy" in body:
+          needs_include_hierarchy = body["needs_include_hierarchy"]
+        else:
+          needs_include_hierarchy = False
+
+        needs_include_hierarchy=needs_include_hierarchy, 
 
         ret = gen.gen_excel_doc(
             project_id=project_id, 
-            has_hierarchy=has_hierarchy, 
+            needs_include_hierarchy=needs_include_hierarchy, 
             template=template, 
             result_filename=project_id + ".xlsx",
             needs_download_url=True
