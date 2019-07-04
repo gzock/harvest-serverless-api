@@ -56,16 +56,29 @@ def lambda_handler(event, context):
       body = req.get_body()
       if gen_type  == "zip":
         by_name = body["by_name"]
+        if "needs_include_hierarchy" in body:
+          needs_include_hierarchy = body["needs_include_hierarchy"]
+        else:
+          needs_include_hierarchy = False
+
+        if "needs_make_dir" in body:
+          needs_make_dir = body["needs_make_dir"]
+        else:
+          needs_make_dir = False
+
         if "char_enc" in body:
           char_enc = body["char_enc"]
         else:
           char_enc = "utf_8"
+
         ret = gen.gen_zip(
             project_id=project_id, 
             by_name=by_name,
             result_filename=project_id + ".zip",
             needs_download_url=True,
-            char_enc=char_enc
+            needs_include_hierarchy=needs_include_hierarchy, 
+            needs_make_dir=needs_make_dir,
+            char_enc=char_enc,
         )
         if isinstance(ret, str):
           ret = {"download_url": ret}
