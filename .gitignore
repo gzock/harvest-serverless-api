@@ -244,6 +244,7 @@ $RECYCLE.BIN/
 
 # User Add
 /*/site-packages/*
+!/*/site-packages/zipfile.py
 !harvest
 !decode_verify_jwt.py
 test.py
