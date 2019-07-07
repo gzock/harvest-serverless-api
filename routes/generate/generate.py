@@ -71,6 +71,11 @@ def lambda_handler(event, context):
         else:
           char_enc = "utf_8"
 
+        if "all_photos" in body:
+          all_photos = body["all_photos"]
+        else
+          all_photos = False
+
         ret = gen.gen_zip(
             project_id=project_id, 
             by_name=by_name,
@@ -79,6 +84,7 @@ def lambda_handler(event, context):
             needs_include_hierarchy=needs_include_hierarchy, 
             needs_make_dir=needs_make_dir,
             char_enc=char_enc,
+            all_photos=all_photos
         )
         if isinstance(ret, str):
           ret = {"download_url": ret}
@@ -89,8 +95,6 @@ def lambda_handler(event, context):
           needs_include_hierarchy = body["needs_include_hierarchy"]
         else:
           needs_include_hierarchy = False
-
-        needs_include_hierarchy=needs_include_hierarchy, 
 
         ret = gen.gen_excel_doc(
             project_id=project_id, 
