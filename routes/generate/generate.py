@@ -55,53 +55,23 @@ def lambda_handler(event, context):
       # /projects/{project_id}/generate/{type}
       body = req.get_body()
       if gen_type  == "zip":
-        by_name = body["by_name"]
-        if "needs_include_hierarchy" in body:
-          needs_include_hierarchy = body["needs_include_hierarchy"]
-        else:
-          needs_include_hierarchy = False
 
-        if "needs_make_dir" in body:
-          needs_make_dir = body["needs_make_dir"]
-        else:
-          needs_make_dir = False
-
-        if "char_enc" in body:
-          char_enc = body["char_enc"]
-        else:
-          char_enc = "utf_8"
-
-        if "needs_all_photos" in body:
-          needs_all_photos = body["needs_all_photos"]
-        else:
-          needs_all_photos = False
-
+        config = make_config(args=body, config_type="zip")
         ret = gen.gen_zip(
             project_id=project_id, 
-            by_name=by_name,
             result_filename=project_id + ".zip",
-            needs_download_url=True,
-            needs_include_hierarchy=needs_include_hierarchy, 
-            needs_make_dir=needs_make_dir,
-            char_enc=char_enc,
-            needs_all_photos=needs_all_photos
+            **config
         )
         if isinstance(ret, str):
           ret = {"download_url": ret}
 
       elif gen_type  == "excel-doc":
-        template = req.get_body()["template"]
-        if "needs_include_hierarchy" in body:
-          needs_include_hierarchy = body["needs_include_hierarchy"]
-        else:
-          needs_include_hierarchy = False
 
+        config = make_config(args=body, config_type="excel-doc")
         ret = gen.gen_excel_doc(
             project_id=project_id, 
-            needs_include_hierarchy=needs_include_hierarchy, 
-            template=template, 
             result_filename=project_id + ".xlsx",
-            needs_download_url=True
+            **config
         )
         if isinstance(ret, str):
           ret = {"download_url": ret}
@@ -119,3 +89,29 @@ def lambda_handler(event, context):
     logger.exception(e)
 
   return make_response(status_code=status_code, body=ret)
+
+
+def make_config(args, config_type):
+  config = {
+    "needs_include_hierarchy": False,
+    "needs_date": False,
+    "needs_download_url": True
+  }
+
+  if config_type == "zip":
+    config.update({
+      "by_name": False,
+      "needs_make_dir": False,
+      "needs_all_photos": False,
+      "char_enc": "utf_8"
+    })
+  elif config_type == "excel-doc":
+    config.update({
+      "template": "basic_1.xlsx"
+    })
+
+  for k, v in args.items():
+    if k in config:
+      config[k] = v
+
+  return config
