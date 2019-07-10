@@ -47,7 +47,6 @@ def lambda_handler(event, context):
   ret = ""
 
   try:
-    auth = Auth(DYNAMO_HOST, DYNAMO_PORT, user_id, project_id)
     if req.get_method() == "GET":
       pass
 
