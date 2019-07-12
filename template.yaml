@@ -460,6 +460,63 @@ Resources:
                     Properties:
                         Path: /users/{user_id}/notifications/{notification_id}
                         Method: delete
+    CorporationManageyFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: routes
+            Handler: corporation/corporation.lambda_handler
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PYTHONPATH: /var/task/site-packages
+                    DYNAMO_HOST: ""
+                    DYNAMO_PORT: ""
+            Events:
+                ForCORS:
+                    Type: Api
+                    Properties:
+                        Path: /corporation
+                        Method: options
+                GetCorporationInfo:
+                    Type: Api
+                    Properties:
+                        Path: /corporation
+                        Method: get
+                ForCORS2:
+                    Type: Api
+                    Properties:
+                        Path: /corporation/users
+                        Method: options
+                GetCorporationJoinUsers:
+                    Type: Api
+                    Properties:
+                        Path: /corporation/users
+                        Method: get
+                CreateCorporationJoinUsers:
+                    Type: Api
+                    Properties:
+                        Path: /corporation/users
+                        Method: post
+                GetCorporationJoinUser:
+                    Type: Api
+                    Properties:
+                        Path: /corporation/users/{user_id}
+                        Method: get
+                UpdateCorporationJoinUser:
+                    Type: Api
+                    Properties:
+                        Path: /corporation/users/{user_id}
+                        Method: put
+                DeleteCorporationJoinUser:
+                    Type: Api
+                    Properties:
+                        Path: /corporation/users/{user_id}
+                        Method: delete
+                GetBilling:
+                    Type: Api
+                    Properties:
+                        Path: /corporation/billing
+                        Method: get
 #    HarvestApi:
 #        Type: AWS::Serverless::Api
 #        Properties:
