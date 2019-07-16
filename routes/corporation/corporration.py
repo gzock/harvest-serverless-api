@@ -41,19 +41,19 @@ def lambda_handler(event, context):
   # /corps
   try:
     if req.get_method() == "GET":
-      # /corps/xxxx-xxxx-xxxx-xxxx
-      ret = corp.show_corp()
+      # /corporation
+      ret = corp.show()
 
     # /corps
-    elif req.get_method() == "POST":
-      ret = corp.create_corp(name, start_on, complete_on)
+    #elif req.get_method() == "POST":
+    #  ret = corp.create_corp(name, start_on, complete_on)
 
-    elif req.get_method() == "PUT":
-      name = req.get_body()["name"]
-      ret = corp.update_corp(name, start_on, complete_on)
+    #elif req.get_method() == "PUT":
+    #  name = req.get_body()["name"]
+    #  ret = corp.update_corp(name, start_on, complete_on)
 
-    elif req.get_method() == "DELETE":
-      ret = corp.delete_corp()
+    #elif req.get_method() == "DELETE":
+    #  ret = corp.delete_corp()
 
     elif req.get_method() == "OPTIONS":
       ret = []
