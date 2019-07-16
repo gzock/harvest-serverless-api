@@ -24,7 +24,7 @@ def lambda_handler(event, context):
   logger.setLevel(logging.DEBUG)
 
   try:
-    corp = Corporation(DYNAMO_HOST, DYNAMO_PORT)
+    corp = Corporation()
     req = RequestDecorator(event)
   except Exception as e:
     raise e
