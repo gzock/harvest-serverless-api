@@ -42,11 +42,16 @@ def lambda_handler(event, context):
   try:
     if req.get_method() == "GET":
       # /corporation
-      ret = corp.show()
+      if "users" in req.get_path():
+        ret = corp.list_users()
+      else:
+        ret = corp.show()
 
-    # /corps
-    #elif req.get_method() == "POST":
-    #  ret = corp.create_corp(name, start_on, complete_on)
+    elif req.get_method() == "POST":
+      body = req.get_body()
+      if corporation_id:
+        body.update({"corporation_id": corporation_id})
+        ret = corp.create_user(**body)
 
     #elif req.get_method() == "PUT":
     #  name = req.get_body()["name"]
