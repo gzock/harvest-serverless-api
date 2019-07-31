@@ -460,7 +460,7 @@ Resources:
                     Properties:
                         Path: /users/{user_id}/notifications/{notification_id}
                         Method: delete
-    CorporationManageyFunction:
+    CorporationFunction:
         Type: AWS::Serverless::Function
         Properties:
             CodeUri: routes

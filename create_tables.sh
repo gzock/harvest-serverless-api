@@ -84,3 +84,17 @@ aws dynamodb update-time-to-live \
     --table-name Notifications \
     --time-to-live-specification "Enabled=true, AttributeName=ttl"
 echo "----------"
+
+echo "`date`  create bills table"
+echo "----------"
+aws dynamodb create-table \
+    --endpoint-url http://localhost:8000 \
+    --table-name Bills \
+    --attribute-definitions \
+        AttributeName=user_id,AttributeType=S \
+        AttributeName=context,AttributeType=S \
+    --key-schema \
+        AttributeName=user_id,KeyType=HASH \
+        AttributeName=context,KeyType=RANGE \
+    --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+echo "----------"

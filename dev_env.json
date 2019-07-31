@@ -46,5 +46,11 @@
     "DYNAMO_PORT": "8000",
     "S3_HOST": "10.0.2.15",
     "S3_PORT": "9000"
+  },
+  "CorporationFunction": {
+    "DYNAMO_HOST": "10.0.2.15",
+    "DYNAMO_PORT": "8000",
+    "S3_HOST": "10.0.2.15",
+    "S3_PORT": "9000"
   }
 }
