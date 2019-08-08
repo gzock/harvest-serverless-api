@@ -367,6 +367,41 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/generate/{type}
                         Method: post
+                ForCORS2:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{type}/template
+                        Method: options
+                GetCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{type}/template
+                        Method: get
+                ForCORS3:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Method: options
+                GetCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Method: get
+                PostCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Method: post
+                UpdateCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Method: put
+                DeleteCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Method: delete
     NotificationsDispatcherFunction:
         Type: AWS::Serverless::Function
         Properties:
