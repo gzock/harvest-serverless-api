@@ -45,9 +45,9 @@ def lambda_handler(event, context):
   try:
     if req.get_method() == "GET":
       if "template_id" in path_params:
-        ret = self.tmpl.get(path_params["template_id"])
+        ret = tmpl.get(path_params["template_id"])
       else:
-        ret = self.tmpl.list()
+        ret = tmpl.list()
 
     elif req.get_method() == "POST":
       config = req.get_body()
