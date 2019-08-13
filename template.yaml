@@ -367,40 +367,52 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/generate/{type}
                         Method: post
+    TemplateFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: routes
+            Handler: generate/generate.lambda_handler #TODO: ここを複数作る必要がある？？
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PYTHONPATH: /var/task/site-packages
+                    DYNAMO_HOST: ""
+                    DYNAMO_PORT: ""
+            Events:
+                ForCORS:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/excel-doc/templates
+                        Method: options
+                GetCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/excel-doc/templates
+                        Method: get
                 ForCORS2:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/generate/{type}/template
+                        Path: /projects/{project_id}/generate/excel-doc/templates/{template_id}
                         Method: options
                 GetCustomExcelTemplate:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/generate/{type}/template
-                        Method: get
-                ForCORS3:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
-                        Method: options
-                GetCustomExcelTemplate:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Path: /projects/{project_id}/generate/excel-doc/templates/{template_id}
                         Method: get
                 PostCustomExcelTemplate:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Path: /projects/{project_id}/generate/excel-doc/templates/{template_id}
                         Method: post
                 UpdateCustomExcelTemplate:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Path: /projects/{project_id}/generate/excel-doc/templates/{template_id}
                         Method: put
                 DeleteCustomExcelTemplate:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/generate/{type}/template/{template_id}
+                        Path: /projects/{project_id}/generate/excel-doc/templates/{template_id}
                         Method: delete
     NotificationsDispatcherFunction:
         Type: AWS::Serverless::Function
