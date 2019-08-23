@@ -360,6 +360,16 @@ Resources:
                 ForCORS:
                     Type: Api
                     Properties:
+                        Path: /projects/{project_id}/generate
+                        Method: options
+                GetGeneratedHistory: #生成済み一覧を取得
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate
+                        Method: get
+                ForCORS2:
+                    Type: Api
+                    Properties:
                         Path: /projects/{project_id}/generate/{type}
                         Method: options
                 InvokeGenerate: #target単体配下に写真を追加
@@ -367,6 +377,16 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/generate/{type}
                         Method: post
+                ForCORS3:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{generated_filename}/download
+                        Method: options
+                GneratedFileDownload: #target単体配下に写真を追加
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{generated_filename}/download
+                        Method: put
     TemplateFunction:
         Type: AWS::Serverless::Function
         Properties:
