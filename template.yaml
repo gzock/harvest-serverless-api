@@ -367,17 +367,12 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/generate
                         Method: get
-                ForCORS2:
+                InvokeGenerate: #生成
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/generate/{type}
-                        Method: options
-                InvokeGenerate: #target単体配下に写真を追加
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/generate/{type}
+                        Path: /projects/{project_id}/generate
                         Method: post
-                ForCORS3:
+                ForCORS2:
                     Type: Api
                     Properties:
                         Path: /projects/{project_id}/generate/{generated_file_id}/download

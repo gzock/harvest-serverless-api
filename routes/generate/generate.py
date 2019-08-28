@@ -39,10 +39,6 @@ def lambda_handler(event, context):
     gen.set_project_id(project_id)
     logger.info("requested project_id: {}".format(project_id))
 
-  if "type" in path_params:
-    gen_type = path_params["type"]
-    logger.info("requested generate type: {}".format(gen_type))
-  
   status_code = 200
   ret = ""
 
@@ -53,6 +49,9 @@ def lambda_handler(event, context):
     elif req.get_method() == "POST":
       # /projects/{project_id}/generate/{type}
       body = req.get_body()
+      gen_type = body["type"]
+      logger.info("requested generate type: {}".format(gen_type))
+  
       if gen_type  == "zip":
 
         config = make_config(args=body, project_id=project_id, config_type="zip")
@@ -63,9 +62,9 @@ def lambda_handler(event, context):
         if isinstance(ret, str):
           ret = {"download_url": ret}
 
-      elif gen_type  == "excel-doc":
+      elif gen_type  == "excel":
 
-        config = make_config(args=body, project_id=project_id, config_type="excel-doc")
+        config = make_config(args=body, project_id=project_id, config_type="excel")
         ret = gen.gen_excel_doc(
             project_id=project_id, 
             **config
@@ -107,7 +106,7 @@ def make_config(args, project_id, config_type):
       "needs_all_photos": False,
       "char_enc": "utf_8"
     })
-  elif config_type == "excel-doc":
+  elif config_type == "excel":
     config.update({
       "template": "basic_1.xlsx"
     })
