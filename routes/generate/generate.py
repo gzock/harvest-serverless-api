@@ -48,17 +48,16 @@ def lambda_handler(event, context):
 
   try:
     if req.get_method() == "GET":
-      pass
+      ret = gen.list()
 
     elif req.get_method() == "POST":
       # /projects/{project_id}/generate/{type}
       body = req.get_body()
       if gen_type  == "zip":
 
-        config = make_config(args=body, config_type="zip")
+        config = make_config(args=body, project_id=project_id, config_type="zip")
         ret = gen.gen_zip(
             project_id=project_id, 
-            result_filename=project_id + ".zip",
             **config
         )
         if isinstance(ret, str):
@@ -66,14 +65,17 @@ def lambda_handler(event, context):
 
       elif gen_type  == "excel-doc":
 
-        config = make_config(args=body, config_type="excel-doc")
+        config = make_config(args=body, project_id=project_id, config_type="excel-doc")
         ret = gen.gen_excel_doc(
             project_id=project_id, 
-            result_filename=project_id + ".xlsx",
             **config
         )
         if isinstance(ret, str):
           ret = {"download_url": ret}
+    elif req.get_method() == "PUT":
+      generated_file_id = path_params["generated_file_id"]
+      ret = gen.gen_download_url(generated_file_id)
+
     logger.info("processing successfully. return value: {}".format(ret))
 
   except ActionDeniedError as e:
@@ -90,8 +92,9 @@ def lambda_handler(event, context):
   return make_response(status_code=status_code, body=ret)
 
 
-def make_config(args, config_type):
+def make_config(args, project_id, config_type):
   config = {
+    "title": project_id,
     "needs_include_hierarchy": False,
     "needs_date": False,
     "needs_download_url": True

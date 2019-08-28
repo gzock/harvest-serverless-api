@@ -360,6 +360,16 @@ Resources:
                 ForCORS:
                     Type: Api
                     Properties:
+                        Path: /projects/{project_id}/generate
+                        Method: options
+                GetGeneratedHistory: #生成済み一覧を取得
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate
+                        Method: get
+                ForCORS2:
+                    Type: Api
+                    Properties:
                         Path: /projects/{project_id}/generate/{type}
                         Method: options
                 InvokeGenerate: #target単体配下に写真を追加
@@ -367,6 +377,63 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/generate/{type}
                         Method: post
+                ForCORS3:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{generated_file_id}/download
+                        Method: options
+                GneratedFileDownload: #target単体配下に写真を追加
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/generate/{generated_file_id}/download
+                        Method: put
+    TemplateFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: routes
+            Handler: template/template.lambda_handler #TODO: ここを複数作る必要がある？？
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PYTHONPATH: /var/task/site-packages
+                    DYNAMO_HOST: ""
+                    DYNAMO_PORT: ""
+            Events:
+                ForCORS:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/templates
+                        Method: options
+                ListCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/templates
+                        Method: get
+                ForCORS2:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/templates/{template_id}
+                        Method: options
+                GetCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/templates/{template_id}
+                        Method: get
+                CreateCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/templates/{template_id}
+                        Method: post
+                UpdateCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/templates/{template_id}
+                        Method: put
+                DeleteCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/templates/{template_id}
+                        Method: delete
     NotificationsDispatcherFunction:
         Type: AWS::Serverless::Function
         Properties:
