@@ -380,12 +380,12 @@ Resources:
                 ForCORS3:
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/generate/{generated_filename}/download
+                        Path: /projects/{project_id}/generate/{generated_file_id}/download
                         Method: options
                 GneratedFileDownload: #target単体配下に写真を追加
                     Type: Api
                     Properties:
-                        Path: /projects/{project_id}/generate/{generated_filename}/download
+                        Path: /projects/{project_id}/generate/{generated_file_id}/download
                         Method: put
     TemplateFunction:
         Type: AWS::Serverless::Function

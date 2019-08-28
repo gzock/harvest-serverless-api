@@ -73,8 +73,8 @@ def lambda_handler(event, context):
         if isinstance(ret, str):
           ret = {"download_url": ret}
     elif req.get_method() == "PUT":
-      filename = path_params["generated_filename"]
-      ret = gen.gen_download_url(filename)
+      generated_file_id = path_params["generated_file_id"]
+      ret = gen.gen_download_url(generated_file_id)
 
     logger.info("processing successfully. return value: {}".format(ret))
 
