@@ -51,7 +51,6 @@ def lambda_handler(event, context):
 
     elif req.get_method() == "POST":
       config = req.get_body()
-
       ret = tmpl.create(
           **config
       )

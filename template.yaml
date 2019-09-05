@@ -406,6 +406,11 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/templates
                         Method: get
+                CreateCustomExcelTemplate:
+                    Type: Api
+                    Properties:
+                        Path: /projects/{project_id}/templates
+                        Method: post
                 ForCORS2:
                     Type: Api
                     Properties:
@@ -416,11 +421,6 @@ Resources:
                     Properties:
                         Path: /projects/{project_id}/templates/{template_id}
                         Method: get
-                CreateCustomExcelTemplate:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/templates/{template_id}
-                        Method: post
                 UpdateCustomExcelTemplate:
                     Type: Api
                     Properties:
