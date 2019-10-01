@@ -54,6 +54,8 @@ def lambda_handler(event, context):
       ret = tmpl.create(
           **config
       )
+    elif req.get_method() == "DELETE":
+      ret = tmpl.delete(path_params["template_id"])
 
     logger.info("processing successfully. return value: {}".format(ret))
 
