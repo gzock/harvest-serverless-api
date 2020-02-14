@@ -561,6 +561,11 @@ Resources:
                     Properties:
                         Path: /corporation/users
                         Method: post
+                ForCORS3:
+                    Type: Api
+                    Properties:
+                        Path: /corporation/users/{user_id}
+                        Method: options
                 GetCorporationJoinUser:
                     Type: Api
                     Properties:

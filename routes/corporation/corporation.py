@@ -35,6 +35,8 @@ def lambda_handler(event, context):
     corp.set_corporation_id(corporation_id)
 
   path_params = req.get_path_params()
+  if "user_id" in path_params:
+    user_id = path_params["user_id"]
   
   status_code = 200
   ret=""
@@ -57,8 +59,9 @@ def lambda_handler(event, context):
     #  name = req.get_body()["name"]
     #  ret = corp.update_corp(name, start_on, complete_on)
 
-    #elif req.get_method() == "DELETE":
-    #  ret = corp.delete_corp()
+    elif req.get_method() == "DELETE":
+      if "/corporation/users/" in req.get_path() and "user_id" in locals():
+        ret = corp.delete_user(user_id)
 
     elif req.get_method() == "OPTIONS":
       ret = []
