@@ -348,7 +348,7 @@ Resources:
     GenerateFunction:
         Type: AWS::Serverless::Function
         Properties:
-            Timeout: 120
+            Timeout: 300
             MemorySize: 3008
             CodeUri: routes
             Handler: generate/generate.lambda_handler #TODO: ここを複数作る必要がある？？
