@@ -586,6 +586,24 @@ Resources:
                     Properties:
                         Path: /corporation/billing
                         Method: get
+    BillDispatcherFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Timeout: 60
+            CodeUri: routes
+            Handler: corporation/bill_dispatcher.lambda_handler
+            Runtime: python3.6
+            Environment:
+                Variables:
+                    PYTHONPATH: /var/task/site-packages
+                    DYNAMO_HOST: ""
+                    DYNAMO_PORT: ""
+            Events:
+                BillCalculationForEachMonth:
+                    Type: Schedule
+                    Properties:
+                      Schedule: cron(10 0 25 * * *)
+                      Enabled: true
 #    HarvestApi:
 #        Type: AWS::Serverless::Api
 #        Properties:
