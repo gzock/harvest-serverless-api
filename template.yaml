@@ -602,8 +602,7 @@ Resources:
                 BillCalculationForEachMonth:
                     Type: Schedule
                     Properties:
-                      Schedule: cron(10 0 25 * * *)
-                      Enabled: true
+                      Schedule: cron(10 0 25 * ? *)
 #    HarvestApi:
 #        Type: AWS::Serverless::Api
 #        Properties:
