@@ -109,7 +109,8 @@ def make_config(args, project_id, config_type):
   elif config_type == "excel":
     config.update({
       "template_id": "basic_1.xlsx",
-      "needs_print_settings": False
+      "needs_print_settings": False,
+      "needs_sort": False
     })
 
   for k, v in args.items():
