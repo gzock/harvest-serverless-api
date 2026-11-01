@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import boto3
+from botocore.exceptions import ClientError
 import pytest
 
 spec = importlib.util.spec_from_file_location(
@@ -139,3 +140,45 @@ def test_aws_table_plan_never_creates_sam_owned_new_tables():
     assert not names.intersection(
         {"review_Imports", "review_UploadSessions", "review_GenerationJobs"}
     )
+
+
+@pytest.mark.parametrize(
+    "stream",
+    [None, {"StreamEnabled": False}, {"StreamEnabled": True, "StreamViewType": "KEYS_ONLY"}],
+)
+def test_existing_table_without_required_stream_is_not_reported_ready(monkeypatch, stream):
+    parameters = args(apply=True)
+    operation = admin.build_plan(parameters)["operations"][0]
+    request = operation["request"]
+    existing = dict(request)
+    if stream is None:
+        existing.pop("StreamSpecification")
+    else:
+        existing["StreamSpecification"] = stream
+    client = Mock()
+    client.create_table.side_effect = ClientError(
+        {"Error": {"Code": "ResourceInUseException"}}, "CreateTable"
+    )
+    client.describe_table.return_value = {"Table": existing}
+    session = Mock()
+    session.client.return_value = client
+    monkeypatch.setattr(boto3, "Session", lambda **_: session)
+    with pytest.raises(ValueError, match="stream differs"):
+        admin.execute(parameters, {"operations": [operation]})
+    client.get_waiter.assert_not_called()
+    client.update_table.assert_not_called()
+
+
+def test_existing_table_with_required_stream_can_be_reused(monkeypatch):
+    parameters = args(apply=True)
+    operation = admin.build_plan(parameters)["operations"][0]
+    client = Mock()
+    client.create_table.side_effect = ClientError(
+        {"Error": {"Code": "ResourceInUseException"}}, "CreateTable"
+    )
+    client.describe_table.return_value = {"Table": operation["request"]}
+    session = Mock()
+    session.client.return_value = client
+    monkeypatch.setattr(boto3, "Session", lambda **_: session)
+    admin.execute(parameters, {"operations": [operation]})
+    client.get_waiter.return_value.wait.assert_called_once_with(TableName="review_Projects")

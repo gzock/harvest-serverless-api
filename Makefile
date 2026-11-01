@@ -32,3 +32,4 @@ validate:
 
 build: package validate
 	$(SAM) build --template-file template.yaml
+	$(UV) run --frozen python scripts/artifact_manifest.py create --artifact .

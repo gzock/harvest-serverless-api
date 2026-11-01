@@ -266,6 +266,11 @@ def execute(args, plan):
                     )
                     if normalize(existing.get(field, [])) != normalize(request.get(field, [])):
                         raise ValueError("Existing table indexes differ; use an explicit migration")
+                if (
+                    request.get("StreamSpecification")
+                    and existing.get("StreamSpecification") != request["StreamSpecification"]
+                ):
+                    raise ValueError("Existing table stream differs; use an explicit migration")
             client.get_waiter("table_exists").wait(TableName=request["TableName"])
         elif operation["operation"] == "update_time_to_live":
             current = client.describe_time_to_live(TableName=request["TableName"])[

@@ -64,6 +64,7 @@ jobs:
       - run: make package
       - run: uv tool run --from aws-sam-cli==1.169.0 sam validate --lint
       - run: uv tool run --from aws-sam-cli==1.169.0 sam build
+      - run: uv run --frozen python scripts/artifact_manifest.py create --artifact .
       - name: Test report
         if: always()
         uses: actions/upload-artifact@v7
@@ -75,8 +76,10 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: api-build-${{ github.sha }}
+          if-no-files-found: error
           path: |
             .build/lambda/
+            .build/lambda-manifest.json
             .aws-sam/build/template.yaml
           include-hidden-files: true
           retention-days: 7

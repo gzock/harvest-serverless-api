@@ -15,6 +15,8 @@ AWS向けには `--environment`、`--region`、`--account-id` が必須です。
 
 AWS上の既存資源やSAMが所有する資源の作成には通常この入口を使わず、デプロイの変更セット／resource importを使用してください。この入口で新規AWSテーブルを作る場合は、prefix、バックアップ、ownership、SAMパラメータとの対応を先に確認します。
 
+既存テーブルの再利用ではkey・indexに加えて必要なStreams設定も照合します。Projects/Roles/Places/Targetsに`NEW_AND_OLD_IMAGES`の有効streamがない場合は成功扱いにせず、明示的な移行を要求します。CLIは既存tableのstreamを勝手に有効化・変更しません。
+
 ## 請求先
 
 ローカルのJSONファイルへ `user_id`、`name`、`email`、`postal_code`、`address`、`department`、`tel`、`contact` の文字列を指定します。引用符・改行・日本語はJSONとして処理します。

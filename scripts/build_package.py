@@ -85,7 +85,12 @@ for handler in json.loads(sys.argv[1]):
     subprocess.run(
         [sys.executable, "-S", "-c", smoke, json.dumps(handlers)],
         cwd=OUTPUT,
-        env={**os.environ, "PYTHONPATH": str(OUTPUT), "AWS_EC2_METADATA_DISABLED": "true"},
+        env={
+            **os.environ,
+            "PYTHONPATH": str(OUTPUT),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "AWS_EC2_METADATA_DISABLED": "true",
+        },
         check=True,
     )
     print(f"Built Lambda artifact: {OUTPUT}")
