@@ -182,7 +182,7 @@ class PhotoController(DynamoDbDriver):
     def _write(self, target, photos, increment_type=None):
         return self.client.transact_write_items(**self._transaction(target, photos, increment_type))
 
-    def create(self, target_id, type, data, photo_id=None):
+    def create(self, target_id, type, data, photo_id=None, *, finalization=None):
         if type not in ("before", "after") or not self.user_id:
             raise ValueError("Invalid photo request")
         target = self._target(target_id)
@@ -192,6 +192,14 @@ class PhotoController(DynamoDbDriver):
                 if photo_id in target["photos"][kind]:
                     if kind != type:
                         raise PhotoIsNotFoundError()
+                    if finalization is not None:
+                        # Recover older sessions whose photo committed before the
+                        # finalization response. The snapshot and lease still
+                        # participate in one transaction; never resurrect a photo
+                        # after a later successful finalize/delete sequence.
+                        transaction = self._transaction(target, target["photos"])
+                        transaction["TransactItems"].append(finalization)
+                        self.client.transact_write_items(**transaction)
                     return {"message": "successfully"}
         if len(target["photos"][type]) >= 5:
             raise PhotoSaveLimitExceededError()
@@ -212,6 +220,8 @@ class PhotoController(DynamoDbDriver):
         transaction = self._transaction(
             target, photos, increment_type=type if len(target["photos"][type]) == 0 else None
         )
+        if finalization is not None:
+            transaction["TransactItems"].append(finalization)
         self.__s3.put_obj(photo_id, data, tags)
         try:
             return self.client.transact_write_items(**transaction)

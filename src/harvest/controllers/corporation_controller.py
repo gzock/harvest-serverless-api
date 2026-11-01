@@ -142,24 +142,33 @@ class CorporationController:
             verify=True,
         )
 
-        if user["Enabled"]:
-            if user["UserStatus"] == "FORCE_CHANGE_PASSWORD":
-                self.cognito.set_user_password(user["Username"], password)
-            self.cognito.add_user_to_group(user["Username"], corporation_id)
+        created_id = user["Username"]
+        try:
+            if not user.get("Enabled"):
+                raise RuntimeError("Created employee is not enabled")
+            if user.get("UserStatus") == "FORCE_CHANGE_PASSWORD":
+                self.cognito.set_user_password(created_id, password)
+            self.cognito.add_user_to_group(created_id, corporation_id)
+            self.billing.update(event="create_user", user_id=corporation_id, member_id=created_id)
+        except Exception:
+            # This identifier came from this successful create operation. Do not
+            # use the public delete flow: group assignment may itself have failed,
+            # so its ownership guard cannot authorize cleanup of this new user.
             try:
-                self.billing.update(
-                    event="create_user", user_id=corporation_id, member_id=user["Username"]
+                self.cognito.disable_user(created_id)
+            except Exception as cleanup_error:
+                self.logger.error(
+                    "employee_provisioning_cleanup_failed error_type=%s",
+                    type(cleanup_error).__name__,
                 )
-            except:
-                self.delete_user(user["Username"])
-                # TODO: 例外処理必要
-                raise Exception
-        else:
-            self.delete_user(user["Username"])
-
-        del user["UserCreateDate"]
-        del user["UserLastModifiedDate"]
-        return user
+                raise RuntimeError(
+                    "Employee provisioning incomplete; administrator recovery required"
+                ) from None
+            raise
+        result = dict(user)
+        result.pop("UserCreateDate", None)
+        result.pop("UserLastModifiedDate", None)
+        return result
 
     def delete_user(self, user_id):
         self.require_owned_employee(user_id)

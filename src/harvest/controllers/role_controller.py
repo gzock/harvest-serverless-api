@@ -131,7 +131,7 @@ class RoleController(DynamoDbDriver):
             user_id = self.user_id
 
         now = datetime.now().isoformat()
-        return super().update_item(
+        return super().guarded_update_item(
             partition_key=self.project_id,
             sort_key=user_id,
             update_exp="set #role = :role, #updated_at = :updated_at, #updated_by = :updated_by",
@@ -159,7 +159,7 @@ class RoleController(DynamoDbDriver):
             user_id = self.user_id
 
         now = datetime.now().isoformat()
-        return super().update_item(
+        return super().guarded_update_item(
             partition_key=self.project_id,
             sort_key=user_id,
             update_exp="set #status = :status, #updated_at = :updated_at, #updated_by = :updated_by",
@@ -186,12 +186,19 @@ class RoleController(DynamoDbDriver):
             user_id = self.user_id
 
         # Owners may only be removed by the explicit whole-project deletion flow.
-        return self.client.delete_item(
-            TableName=os.environ.get("TABLE_ROLES", "Roles"),
-            Key={"project_id": {"S": self.project_id}, "user_id": {"S": user_id}},
-            ConditionExpression="attribute_exists(user_id) AND #role <> :owner",
-            ExpressionAttributeNames={"#role": "role"},
-            ExpressionAttributeValues={":owner": {"S": "owner"}},
+        return self.client.transact_write_items(
+            TransactItems=[
+                active_project_check(self.project_id),
+                {
+                    "Delete": {
+                        "TableName": os.environ.get("TABLE_ROLES", "Roles"),
+                        "Key": {"project_id": {"S": self.project_id}, "user_id": {"S": user_id}},
+                        "ConditionExpression": "attribute_exists(user_id) AND #role <> :owner",
+                        "ExpressionAttributeNames": {"#role": "role"},
+                        "ExpressionAttributeValues": {":owner": {"S": "owner"}},
+                    }
+                },
+            ]
         )
 
     def delete_all(self):

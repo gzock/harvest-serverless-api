@@ -70,7 +70,20 @@ def test_local_upload_quota_failure_rolls_back_all_actions(dynamodb_local, monke
         session = service.create(
             "another-actor", db.project_id, "finalize-target", "before", "image/png", len(data)
         )
-        photo.create.side_effect = [RuntimeError("transient photo write failure"), {}]
+        attempts = 0
+
+        def write_photo(*args, finalization, **kwargs):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise RuntimeError("transient photo write failure")
+            # PhotoController now atomically applies this action with membership.
+            # This quota-focused test substitutes the photo write, but executes
+            # the real session completion expression. Full cross-table races are
+            # covered in test_security_review_dynamodb.py.
+            return db.client.transact_write_items(TransactItems=[finalization])
+
+        photo.create.side_effect = write_photo
         with pytest.raises(RuntimeError, match="transient"):
             service.complete(
                 "another-actor", db.project_id, "finalize-target", session["session_id"]

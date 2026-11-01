@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 from botocore.exceptions import ClientError, ReadTimeoutError
+from boto3.dynamodb.types import TypeDeserializer
 from PIL import Image
 
 from harvest.exception import ActionDeniedError, PhotoSaveLimitExceededError
@@ -110,6 +111,21 @@ def uploads(monkeypatch):
     service = UploadService(table=table, s3=s3, clock=lambda: now[0])
     photo = Mock()
     photo._target.return_value = {"photos": {"before": [], "after": []}}
+
+    def atomic_photo_create(*args, finalization, **kwargs):
+        action = finalization["Update"]
+        deserialize = TypeDeserializer().deserialize
+        table.update_item(
+            Key={key: deserialize(value) for key, value in action["Key"].items()},
+            UpdateExpression=action["UpdateExpression"],
+            ConditionExpression=action["ConditionExpression"],
+            ExpressionAttributeValues={
+                key: deserialize(value)
+                for key, value in action["ExpressionAttributeValues"].items()
+            },
+        )
+
+    photo.create.side_effect = atomic_photo_create
     service._authorize = Mock(return_value=photo)
     image = BytesIO()
     Image.new("RGB", (2, 2)).save(image, "JPEG")
@@ -169,9 +185,12 @@ def test_finalize_pins_version_and_returns_stable_result(uploads):
     first = complete(uploads, session["session_id"])
     second = complete(uploads, session["session_id"])
     assert first == second == {"message": "successfully", "photo_id": session["photo_id"]}
-    uploads.photo.create.assert_called_once_with(
-        "target-a", "before", uploads.data, photo_id=session["photo_id"]
-    )
+    uploads.photo.create.assert_called_once()
+    assert uploads.photo.create.call_args.args == ("target-a", "before", uploads.data)
+    assert uploads.photo.create.call_args.kwargs["photo_id"] == session["photo_id"]
+    completion = uploads.photo.create.call_args.kwargs["finalization"]["Update"]
+    assert "lease_until > :now" in completion["ConditionExpression"]
+    assert "phase = :processing" in completion["ConditionExpression"]
     assert uploads.s3.get_object.call_args.kwargs["VersionId"] == "version-one"
 
 

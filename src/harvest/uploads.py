@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import boto3
 from botocore.exceptions import ClientError
+from boto3.dynamodb.types import TypeSerializer
 
 from harvest.auth import Auth
 from harvest.controllers.photo_controller import PhotoController
@@ -264,17 +265,31 @@ class UploadService:
                 raise ValueError("Uploaded image format does not match its content type")
             # Stable server-generated ID makes retry after an unknown DB outcome
             # safe. The finalized bucket is never writable by the browser.
-            photo.create(target_id, item["type"], data, photo_id=item["photo_id"])
-            self.table.update_item(
-                Key={"session_id": session_id},
-                UpdateExpression="SET phase = :completed, completed_at = :now REMOVE lease_token, lease_until",
-                ConditionExpression="lease_token = :lease AND pinned_version = :version",
-                ExpressionAttributeValues={
-                    ":completed": "completed",
-                    ":now": int(self.clock()),
-                    ":lease": lease,
-                    ":version": version,
-                },
+            # The session's lease and terminal state are part of the same
+            # transaction as photo membership/counters. A stale worker cannot
+            # publish after another worker completed (or the photo was deleted).
+            serialize = TypeSerializer().serialize
+            finalization = {
+                "Update": {
+                    "TableName": self.table.name,
+                    "Key": {"session_id": serialize(session_id)},
+                    "UpdateExpression": "SET phase = :completed, completed_at = :now REMOVE lease_token, lease_until",
+                    "ConditionExpression": "phase = :processing AND lease_token = :lease AND pinned_version = :version AND lease_until > :now AND #ttl > :now",
+                    "ExpressionAttributeNames": {"#ttl": "ttl"},
+                    "ExpressionAttributeValues": {
+                        key: serialize(value)
+                        for key, value in {
+                            ":completed": "completed",
+                            ":processing": "processing",
+                            ":now": int(self.clock()),
+                            ":lease": lease,
+                            ":version": version,
+                        }.items()
+                    },
+                }
+            }
+            photo.create(
+                target_id, item["type"], data, photo_id=item["photo_id"], finalization=finalization
             )
         except Exception:
             # Preserve the pinned version. A retried upload may not replace bytes

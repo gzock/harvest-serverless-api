@@ -8,6 +8,11 @@ from base64 import b64decode, b64encode
 from io import BytesIO
 from uuid import uuid4
 
+from defusedxml import ElementTree
+from defusedxml.common import DefusedXmlException
+from openpyxl.utils.cell import range_boundaries
+from openpyxl.worksheet.print_settings import PrintArea
+
 from harvest.drivers.s3_driver import S3Driver
 from harvest.exception import (
     DuplicateTemplateNameExistsError,
@@ -175,30 +180,95 @@ class TemplateController:
         if len(page_breaks) not in [0, 1]:
             raise PageBreaksCountInvalidError
 
-        if not excel.get_print_area():
+        print_area = excel.get_print_area()
+        if not print_area:
             raise PrintAreaNotExistsError
+        min_col, min_row, max_col, max_row = range_boundaries(print_area)
 
         aggregate_cells = excel.aggregate_cell_values(2)
+        placeholders = {"{name}", "{photo}", "{type}", "{title}", "{hierarchy}", "{date}"}
         for key, values in aggregate_cells.items():
+            if key not in placeholders:
+                continue  # Static labels, including repeated labels, are valid.
             if len(values) != 1:
                 raise SettingPropertyCountInvalidError(key, len(values))
             for cell in values:
-                if not excel.has_cell(
-                    cell=cell,
-                    min_row=excel.get_print_area_first_row(),
-                    max_row=excel.get_print_area_last_row(),
-                ):
+                if not (min_row <= cell.row <= max_row and min_col <= cell.column <= max_col):
+                    raise SettingPropertyPositionInvalidError
+                if cell.value != "{title}" and len(page_breaks) == 1 and cell.row <= page_breaks[0]:
                     raise SettingPropertyPositionInvalidError
 
-                if not cell.value == "{title}" and len(page_breaks) == 1:
-                    if not excel.has_cell(
-                        cell=cell,
-                        min_row=page_breaks[0] + 1,
-                        max_row=excel.get_print_area_last_row(),
-                    ):
-                        raise SettingPropertyPositionInvalidError
-
         return True
+
+    MAX_TEMPLATE_CELLS = 100_000
+    MAX_TEMPLATE_ROWS = 10_000
+    MAX_TEMPLATE_COLUMNS = 256
+
+    @classmethod
+    def _bounded_range(cls, reference):
+        try:
+            bounds = range_boundaries(reference)
+            min_col, min_row, max_col, max_row = bounds
+            if (
+                any(value is None for value in bounds)
+                or min_col < 1
+                or min_row < 1
+                or max_col < min_col
+                or max_row < min_row
+                or max_col > cls.MAX_TEMPLATE_COLUMNS
+                or max_row > cls.MAX_TEMPLATE_ROWS
+                or max_col * max_row > cls.MAX_TEMPLATE_CELLS
+            ):
+                raise ValueError
+            return (max_col - min_col + 1) * (max_row - min_row + 1)
+        except TypeError, ValueError:
+            raise ValueError("Template cell range exceeds processing limits") from None
+
+    @classmethod
+    def _validate_xml_ranges(cls, archive):
+        # A tiny ZIP can declare a million-row merge/dimension. Check coordinates
+        # before openpyxl creates cells or iterates a rectangular worksheet.
+        sheets = [
+            name
+            for name in archive.namelist()
+            if name.startswith("xl/worksheets/") and name.endswith(".xml")
+        ]
+        if len(sheets) > 32:
+            raise ValueError("Template contains too many worksheets")
+        total_cells = 0
+        for name in ["xl/workbook.xml", *sheets]:
+            if archive.getinfo(name).file_size > 8 * 1024 * 1024:
+                raise ValueError("Template XML exceeds processing limits")
+            root = ElementTree.fromstring(archive.read(name))
+            extent_row = extent_col = merges = cells = 0
+            for node in root.iter():
+                kind = node.tag.rsplit("}", 1)[-1]
+                if kind in ("dimension", "mergeCell", "c"):
+                    reference = node.get("r" if kind == "c" else "ref")
+                    if not reference:
+                        raise ValueError("Invalid template coordinate")
+                    area = cls._bounded_range(reference)
+                    _, _, last_col, last_row = range_boundaries(reference)
+                    extent_row, extent_col = max(extent_row, last_row), max(extent_col, last_col)
+                    if kind == "mergeCell":
+                        merges += area
+                    if kind == "c":
+                        cells += 1
+                    if max(merges, cells, extent_row * extent_col) > cls.MAX_TEMPLATE_CELLS:
+                        raise ValueError("Template cell range exceeds processing limits")
+                elif kind == "row" and int(node.get("r", "0")) > cls.MAX_TEMPLATE_ROWS:
+                    raise ValueError("Template row exceeds processing limits")
+                elif kind == "col" and int(node.get("max", "0")) > 16384:
+                    raise ValueError("Template column exceeds processing limits")
+                elif kind == "definedName" and node.get("name") == "_xlnm.Print_Area":
+                    areas = PrintArea.from_string(node.text or "").ranges
+                    if not areas:
+                        raise ValueError("Invalid template print area")
+                    for area in areas:
+                        cls._bounded_range(str(area))
+            total_cells += max(merges, cells, extent_row * extent_col)
+            if total_cells > cls.MAX_TEMPLATE_CELLS:
+                raise ValueError("Workbook total cell range exceeds processing limits")
 
     @staticmethod
     def validate_archive(data):
@@ -207,15 +277,18 @@ class TemplateController:
         try:
             with zipfile.ZipFile(BytesIO(data)) as archive:
                 entries = archive.infolist()
+                names = archive.namelist()
                 if (
                     len(entries) > 4096
+                    or len(set(names)) != len(names)
                     or sum(item.file_size for item in entries) > 64 * 1024 * 1024
                     or any(item.flag_bits & 1 for item in entries)
                     or "[Content_Types].xml" not in archive.namelist()
                     or "xl/workbook.xml" not in archive.namelist()
                 ):
                     raise ValueError("Invalid or oversized workbook")
-        except zipfile.BadZipFile:
+                TemplateController._validate_xml_ranges(archive)
+        except zipfile.BadZipFile, ElementTree.ParseError, DefusedXmlException:
             raise ValueError("Invalid workbook") from None
 
     def create(

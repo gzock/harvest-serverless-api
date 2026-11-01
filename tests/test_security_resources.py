@@ -113,7 +113,7 @@ def test_role_delete_atomically_excludes_owner():
     obj.project_id, obj.user_id = "project-a", "actor"
     obj.client = Mock()
     obj.delete("target")
-    args = obj.client.delete_item.call_args.kwargs
+    args = obj.client.transact_write_items.call_args.kwargs["TransactItems"][1]["Delete"]
     assert "#role <> :owner" in args["ConditionExpression"]
     assert args["ExpressionAttributeValues"][":owner"] == {"S": "owner"}
 
