@@ -113,9 +113,14 @@ class ImportController:
     def _transact(self, actions):
         return self.place_controller.client.transact_write_items(TransactItems=actions)
 
+    @staticmethod
+    def _completed_expired(item, now):
+        return item.get("phase") == "completed" and item.get("ttl", now + 1) <= now
+
     def _stage(self, entries, operation):
+        now = int(time.time())
         existing = self._read(operation)
-        if existing:
+        if existing and not self._completed_expired(existing, now):
             return existing, None
         records = []
         for offset in range(0, len(entries), self.CHUNK_SIZE):
@@ -141,7 +146,12 @@ class ImportController:
                 "Put": {
                     "TableName": resolve_table_name("Imports"),
                     "Item": self._serialize(record),
-                    "ConditionExpression": "attribute_not_exists(project_id)",
+                    # TTL deletion is asynchronous and can remove metadata and
+                    # chunks in either order. Replace expired completed plans
+                    # atomically with the project lock, preserving active plans.
+                    "ConditionExpression": "attribute_not_exists(project_id) OR #ttl <= :now",
+                    "ExpressionAttributeNames": {"#ttl": "ttl"},
+                    "ExpressionAttributeValues": self._serialize({":now": now}),
                 }
             }
             for record in [meta, *records]
@@ -152,7 +162,7 @@ class ImportController:
         except ClientError as error:
             # A concurrent identical request may have atomically staged its plan.
             existing = self._read(operation)
-            if existing:
+            if existing and not self._completed_expired(existing, now):
                 return existing, None
             if error.response["Error"]["Code"] == "TransactionCanceledException":
                 raise ImportInProgressError("Project is busy; retry the same CSV later") from error

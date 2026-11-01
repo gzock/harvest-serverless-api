@@ -234,12 +234,12 @@ def test_project_create_and_owner_are_one_transaction(monkeypatch):
     assert actions[0]["Put"]["Item"]["project_id"] == actions[1]["Put"]["Item"]["project_id"]
 
 
-def test_place_create_respects_same_five_level_limit_as_import():
+def test_place_create_rejects_a_seventh_level():
     from harvest.controllers.place_controller import PlaceController
     from harvest.exception import PlaceHierarchyLimitExceededError
 
     place = PlaceController.__new__(PlaceController)
     place.project_id = "project"
-    place.show = Mock(return_value={"hierarchy": "project#one#two#three#four"})
+    place.show = Mock(return_value={"hierarchy": "project#one#two#three#four#five"})
     with pytest.raises(PlaceHierarchyLimitExceededError):
-        place.create("sixth", parent_place_id="fifth")
+        place.create("seventh", parent_place_id="sixth")

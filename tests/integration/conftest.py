@@ -67,7 +67,7 @@ def dynamodb_local(monkeypatch):
             options = {}
             if logical in ("Places", "Targets"):
                 attributes.append({"AttributeName": "parent_place_id", "AttributeType": "S"})
-                options["GlobalSecondaryIndexes"] = [
+                options["LocalSecondaryIndexes"] = [
                     {
                         "IndexName": "ParentPlacesIndex",
                         "KeySchema": [
@@ -80,10 +80,9 @@ def dynamodb_local(monkeypatch):
             if logical == "Roles":
                 options["GlobalSecondaryIndexes"] = [
                     {
-                        "IndexName": "UserProjectsIndex",
+                        "IndexName": "UserRolesIndex",
                         "KeySchema": [
                             {"AttributeName": "user_id", "KeyType": "HASH"},
-                            {"AttributeName": "project_id", "KeyType": "RANGE"},
                         ],
                         "Projection": {"ProjectionType": "ALL"},
                     }

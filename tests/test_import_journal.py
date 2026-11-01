@@ -162,7 +162,12 @@ def test_300_rows_complete_with_bounded_atomic_progress_and_terminal_ttl():
     assert db.rows["Imports"][("project", "same-csv")]["phase"] == "completed"
     assert all("ttl" in item for item in db.rows["Imports"].values())
     assert all(len(call) <= 77 for call in db.calls)
-    assert not any("ttl" in str(call) for call in db.calls[:-1])
+    for call in db.calls[:-1]:
+        for action in call:
+            if "Put" in action:
+                assert "ttl" not in action["Put"]["Item"]
+            if "Update" in action:
+                assert ":ttl" not in action["Update"].get("ExpressionAttributeValues", {})
 
 
 @pytest.mark.parametrize("failure", ["fail_before", "fail_after", "crash_after"])

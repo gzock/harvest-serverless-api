@@ -9,6 +9,9 @@ from harvest.exception import PlaceHierarchyLimitExceededError, NotMeetRequireme
 from harvest.utils.sorters import date_sort
 
 
+MAX_PLACE_DEPTH = 6
+
+
 class PlaceController(DynamoDbDriver):
     logger = logging.getLogger(__name__)
     logger.addHandler(logging.NullHandler())
@@ -68,12 +71,17 @@ class PlaceController(DynamoDbDriver):
         if parent_place_id and parent_place_id != self.project_id:
             # 親placeを取得
             parent = self.show(parent_place_id)
-            hierarchy = parent["hierarchy"]
-            if len(hierarchy.split("#")) >= 5:
+            # UI creation historically permits six places. Older CSV imports
+            # omit the project prefix; count only actual ancestor places so both
+            # stored formats enforce the same UI limit without rewriting data.
+            ancestors = [
+                value
+                for value in parent["hierarchy"].split("#")
+                if value and value != self.project_id
+            ]
+            if len(ancestors) + 1 >= MAX_PLACE_DEPTH:
                 raise PlaceHierarchyLimitExceededError()
-
-            # ヒエラルキに親place_idを足す
-            hierarchy += "#{}".format(parent_place_id)
+            hierarchy = "#".join([self.project_id, *ancestors, parent_place_id])
         else:
             parent_place_id = self.project_id
             hierarchy = self.project_id
