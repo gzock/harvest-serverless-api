@@ -329,10 +329,8 @@ def notifications(user_id: str, notification_id: str | None = None):
 @app.get("/corporation")
 @app.get("/corporation/billing")
 def corporation():
-    value = service("Corporation").show()
-    return response(
-        value["billing"] if request_context.get().get_path().endswith("/billing") else value
-    )
+    # Both legacy paths returned the complete corporation document.
+    return response(service("Corporation").show())
 
 
 @app.route("/corporation/users", method=["GET", "POST"])
@@ -340,11 +338,8 @@ def corporation():
 def corporation_users(user_id: str | None = None):
     corp = service("Corporation")
     if method() == "GET":
-        users = corp.list_users()
-        if user_id:
-            matches = [user for user in users if user["user_id"] == user_id]
-            return response(matches[0], 200) if matches else response({"message": "Not found"}, 404)
-        return response(users)
+        # The item-looking legacy GET is an alias for the corporation member list.
+        return response(corp.list_users())
     if method() == "DELETE":
         return response(corp.delete_user(user_id))
     return response(

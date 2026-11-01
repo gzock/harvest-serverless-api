@@ -231,9 +231,17 @@ def build_contract():
                 {"type": "object", "properties": {"message": {"type": "string"}}},
             )
         if function == "corporation_users" and method == "get" and "{user_id}" in path:
-            operation["responses"]["404"] = response(
-                "Employee not found in this corporation",
-                {"type": "object", "properties": {"message": {"type": "string"}}},
+            operation["description"] = (
+                "Legacy alias for GET /corporation/users. The user_id path parameter does not filter the result."
+            )
+        if function == "corporation_users" and method == "get":
+            operation["responses"]["200"] = response(
+                "Members of the authenticated corporation, preserving the legacy array response.",
+                {"type": "array", "items": {"type": "object"}},
+            )
+        if function == "corporation" and path == "/corporation/billing":
+            operation["description"] = (
+                "Legacy alias for GET /corporation. Returns the complete corporation document including billing."
             )
         paths.setdefault(path, {})[method] = operation
     for path, operations in paths.items():

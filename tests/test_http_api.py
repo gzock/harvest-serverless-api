@@ -261,11 +261,11 @@ def test_supported_route_dispatch_and_response(
     mocks, factory = services
     expected = {"ok": True}
     if path == "/corporation/billing":
-        mocks[name].show.return_value = {"billing": {"total": Decimal("12.50")}}
-        expected = {"total": 12.5}
+        mocks[name].show.return_value = {"name": "Example", "billing": {"total": Decimal("12.50")}}
+        expected = {"name": "Example", "billing": {"total": 12.5}}
     elif method == "GET" and path == "/corporation/users/employee-a":
         mocks[name].list_users.return_value = [{"user_id": "employee-a"}]
-        expected = {"user_id": "employee-a"}
+        expected = [{"user_id": "employee-a"}]
     else:
         getattr(mocks[name], action).return_value = expected
     result = invoke(method, path, data)
@@ -417,10 +417,13 @@ def test_photo_and_report_keep_legacy_wrapper(services):
     ) == {"download_url": "https://download.example.invalid"}
 
 
-def test_corporation_unknown_user_is_404(services):
+@pytest.mark.parametrize("members", [[], [{"user_id": "employee-a"}, {"user_id": "employee-b"}]])
+def test_corporation_legacy_item_get_preserves_list_even_for_unknown_id(services, members):
     mocks, _ = services
-    mocks["Corporation"].list_users.return_value = []
-    assert invoke("GET", "/corporation/users/foreign")["statusCode"] == 404
+    mocks["Corporation"].list_users.return_value = members
+    result = invoke("GET", "/corporation/users/foreign")
+    assert result["statusCode"] == 200
+    assert json.loads(result["body"]) == members
 
 
 def test_unknown_route_is_404(services):
