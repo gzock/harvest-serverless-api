@@ -169,3 +169,28 @@ def test_normal_domain_write_still_emits_notifications(monkeypatch):
         },
     }
     assert NotificationFactory(None, None, record).generate() == [{"notification_id": "normal"}]
+
+
+def test_notification_actor_without_optional_display_name_still_delivers():
+    notification = BaseNotification.__new__(BaseNotification)
+    notification.user_id = "legacy-user"
+    notification.cognito = Mock()
+    notification.cognito.show_user.return_value = [
+        {"Attributes": [{"Name": "email", "Value": "legacy@example.invalid"}]}
+    ]
+    assert notification._BaseNotification__get_user_name() == "【不明】"
+
+
+def test_notification_timestamp_fallback_accepts_updated_only_record():
+    notification = BaseNotification.__new__(BaseNotification)
+    notification.message = "message"
+    notification.notify_users = [{"user_id": "recipient"}]
+    notification.needs_strings_dict = {}
+    notification.event_id = "legacy-event"
+    notification.project_id = "project"
+    notification.event_time = None
+    notification.record = {"updated_at": "2026-01-01T00:00:00"}
+    notification._BaseNotification__get_project_name = lambda: "project"
+    notification._BaseNotification__get_user_name = lambda: "actor"
+    result = notification.generate()
+    assert result[0]["created_at"] == "2026-01-01T00:00:00"

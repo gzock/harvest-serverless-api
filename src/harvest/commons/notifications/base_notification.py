@@ -103,7 +103,7 @@ class BaseNotification:
         except IndexError, KeyError:
             detail = {"preferred_username": "【不明】"}
 
-        return detail["preferred_username"]
+        return detail.get("preferred_username") or "【不明】"
 
     def select_message(self):
         if self.is_insert_event:
@@ -131,7 +131,6 @@ class BaseNotification:
         project_users = self.users.list()
         project_users = [user for user in project_users if user.get("status", "active") == "active"]
 
-        self.logger.info("candidate target notify users: %s" % str(project_users))
         # TODO: needs delete myself user_id
         if target == "all":
             project_users = [user for user in project_users if user["user_id"] != self.user_id]
@@ -149,7 +148,6 @@ class BaseNotification:
                 raise ValueError
             project_users = [{"user_id": user_id}]
 
-        self.logger.info("processing done. notify users: %s" % str(project_users))
         return project_users
 
     def generate(self):
@@ -162,7 +160,6 @@ class BaseNotification:
                 self.notify_users = self.get_notify_users("all")
             self.needs_strings_dict["project_name"] = self.__get_project_name()
             self.needs_strings_dict["user_name"] = self.__get_user_name()
-            self.logger.info("needs mapping string dictionary: %s" % str(self.needs_strings_dict))
 
             self.mapping()
             new_id = str(uuid5(NAMESPACE_URL, self.event_id))
@@ -175,7 +172,7 @@ class BaseNotification:
                 from harvest.utils.sorters import parse_timestamp
 
                 timestamp = parse_timestamp(
-                    self.record.get("updated_at", self.record["created_at"])
+                    self.record.get("updated_at") or self.record["created_at"]
                 )
             # Keep the existing wire format until all readers accept offsets.
             iso_now = timestamp.astimezone(timezone.utc).replace(tzinfo=None).isoformat()
