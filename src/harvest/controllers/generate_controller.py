@@ -3,7 +3,7 @@
 import os
 import re
 import tempfile
-from base64 import b64decode, b64encode
+from base64 import b64encode
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -46,11 +46,11 @@ class GenerateController:
         self.project_id = project_id
 
     @staticmethod
-    def _filename(value):
+    def _filename(value, max_length=240):
         if (
             not isinstance(value, str)
             or not value.strip()
-            or len(value) > 240
+            or len(value) > max_length
             or value in (".", "..")
             or re.search(r"[/\\\x00-\x1f\x7f]", value)
         ):
@@ -75,7 +75,9 @@ class GenerateController:
             tags = self.__s3_gen.get_obj_tags(key)
             if tags.get("project_id") != project_id or tags.get("generated_file_id") != file_id:
                 continue
-            tags["name"] = b64decode(tags["name"]).decode("utf-8")
+            # The key already contains the complete Unicode filename. Legacy
+            # base64 name tags cannot represent long titles within S3's tag limit.
+            tags["name"] = filename
             result.append(tags)
         return result
 
@@ -162,18 +164,20 @@ class GenerateController:
 
     def _publish(self, path, project_id, file_id, filename, kind, needs_download_url):
         key = f"{project_id}/{file_id}/{filename}"
+        if len(key.encode("utf-8")) > 1024:
+            raise ValueError("Generated object key exceeds S3's UTF-8 byte limit")
+        tags = {
+            "generated_file_id": file_id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": self.user_id,
+            "project_id": project_id,
+            "type": kind,
+        }
+        encoded_name = b64encode(filename.encode("utf-8")).decode("ascii")
+        if len(encoded_name) <= 256:
+            tags["name"] = encoded_name  # Preserve existing tags where they fit.
         self.__s3_gen.upload_obj(path, key)
-        self.__s3_gen.put_obj_tags(
-            key,
-            {
-                "generated_file_id": file_id,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "created_by": self.user_id,
-                "project_id": project_id,
-                "name": b64encode(filename.encode("utf-8")).decode("ascii"),
-                "type": kind,
-            },
-        )
+        self.__s3_gen.put_obj_tags(key, tags)
         if not needs_download_url:
             return key
         return {"download_url": self.__s3_gen.create_presigned_url(key), "name": filename}
@@ -302,7 +306,7 @@ class GenerateController:
                 continue
             filename = key[len(prefix) :]
             if "/" not in filename and filename.endswith((".zip", ".xlsx")):
-                self._filename(filename)
+                self._filename(filename, max_length=245)
                 matches.append(key)
         if len(matches) != 1:
             raise ValueError("Generated file not found")
@@ -315,7 +319,7 @@ class GenerateController:
             raise ValueError("Generated file is outside requested scope")
         return {
             "download_url": self.__s3_gen.create_presigned_url(key),
-            "name": b64decode(tags["name"]).decode("utf-8"),
+            "name": key[len(prefix) :],
         }
 
     def iso8601_to_simple(self, iso8601):

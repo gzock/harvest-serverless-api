@@ -464,6 +464,7 @@ class ExcelDocGenerator:
             "src_row_min": self.get_print_area_first_row(),
             "src_row_max": self.get_print_area_last_row(),
         }
+        print_min_col, print_min_row, print_max_col, _ = range_boundaries(self.get_print_area())
         self.logger.debug("detect page_breaks: %s" % page_breaks)
 
         # calcurate copy cell ranges
@@ -487,6 +488,13 @@ class ExcelDocGenerator:
             self.delete_page_break(i)
 
         cell_values = self.aggregate_cell_values(len(items))
+        for placeholder, enabled in (
+            ("{hierarchy}", needs_include_hierarchy),
+            ("{date}", needs_date),
+        ):
+            if not enabled:
+                for cell in cell_values.get(placeholder, []):
+                    self.add_value("", cell)
         if "{title}" in cell_values:
             title_cells = cell_values["{title}"]
             self.logger.debug("each cell type length: title_cells: %s" % title_cells)
@@ -541,7 +549,7 @@ class ExcelDocGenerator:
         if needs_date and "date_cells" in locals():
             cells.append(self.add_each_values(dates, date_cells, False))
 
-        last_col = max([cell.column for cell in cells])
+        last_col = max(print_max_col, max(cell.column for cell in cells))
         last_row = max(
             max(cell.row for cell in cells),
             copy_ranges["src_row_max"]
@@ -558,7 +566,10 @@ class ExcelDocGenerator:
         self.logger.debug("last_row: {}".format(last_row))
 
         # setting print_area
-        self.ws.print_area = "A1:%s%s" % (get_column_letter(last_col), last_row)
+        self.ws.print_area = (
+            f"{get_column_letter(print_min_col)}{print_min_row}:"
+            f"{get_column_letter(last_col)}{last_row}"
+        )
         self.logger.debug("setting print_area: {}".format(self.ws.print_area))
 
         # setting header / print title
