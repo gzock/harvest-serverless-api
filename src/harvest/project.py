@@ -1,0 +1,57 @@
+from harvest.controllers.project_controller import ProjectController
+from harvest.controllers.import_controller import ImportController
+from harvest.auth import Auth
+from harvest.exception import ActionDeniedError
+
+
+class Project:
+    project_id = None
+
+    def __init__(self, host=None, port=None):
+        self.project = ProjectController(host, port)
+        self.importer = ImportController(host, port)
+        self.auth = Auth(host, port)
+
+    # common setters
+    def set_user_id(self, user_id):
+        self.project.set_user_id(user_id)
+        self.importer.set_user_id(user_id)
+        self.auth.set_user_id(user_id)
+
+    def set_project_id(self, project_id):
+        self.project_id = project_id
+        self.project.set_project_id(project_id)
+        self.importer.set_project_id(project_id)
+        self.auth.set_project_id(project_id)
+
+    # actions for project
+    def create_project(self, name, start_on, complete_on):
+        return self.project.create(name, start_on, complete_on)
+
+    def update_project(self, name, start_on, complete_on):
+        if not self.auth.guard("owner"):
+            raise ActionDeniedError()
+        return self.project.update(name, start_on, complete_on)
+
+    def delete_project(self):
+        if not self.auth.guard("owner", allow_deleting=True):
+            raise ActionDeniedError()
+        return self.project.delete()
+
+    def show_project(self):
+        if not self.auth.guard():
+            raise ActionDeniedError()
+        return self.project.show()
+
+    def list_projects(self):
+        return self.project.list_projects()
+
+    def import_csv(self, csv_filename, base64enc=False):
+        if not self.auth.guard("admin", allow_importing=True):
+            raise ActionDeniedError()
+
+        places, targets = self.importer.open_csv(csv_filename, base64enc=base64enc)
+        places, targets = self.importer.convert(places, targets)
+        ret = self.importer.batch_create(places, targets)
+
+        return ret

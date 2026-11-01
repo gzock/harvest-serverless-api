@@ -178,7 +178,8 @@ target/
 .ipynb_checkpoints
 
 # pyenv
-.python-version
+# Commit the runtime selector used by CI and uv.
+!.python-version
 
 # celery beat schedule file
 celerybeat-schedule.*
@@ -243,13 +244,18 @@ $RECYCLE.BIN/
 
 
 # User Add
-/*/site-packages/*
-!/*/site-packages/zipfile.py
-!harvest
-!decode_verify_jwt.py
 test.py
 packaged.yaml
 *.csv
 
 
 # End of https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
+
+# Reproducible build outputs and local tooling
+.build/
+.aws-sam/
+.cache/
+.venv/
+*.egg-info/
+.coverage
+htmlcov/
