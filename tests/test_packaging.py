@@ -156,3 +156,26 @@ def test_every_function_deploys_the_locked_artifact_and_has_bounded_log_retentio
         assert resources[name + "LogGroup"]["Properties"]["RetentionInDays"] == {
             "Ref": "LogRetentionDays"
         }
+
+
+def test_scheduled_failures_can_reach_the_shared_dead_letter_queue():
+    resources = sam_template()["Resources"]
+    rule_arns = []
+    for name, resource in resources.items():
+        if resource["Type"] != "AWS::Serverless::Function":
+            continue
+        for event_name, event in resource["Properties"].get("Events", {}).items():
+            if event["Type"] != "Schedule":
+                continue
+            config = event["Properties"]["DeadLetterConfig"]
+            assert config == {"Arn": {"Fn::GetAtt": ["StreamFailureQueue", "Arn"]}}
+            rule_arns.append({"Fn::GetAtt": [name + event_name, "Arn"]})
+    assert len(rule_arns) == 3
+    policy = resources["ScheduleFailureQueuePolicy"]["Properties"]
+    assert policy["Queues"] == [{"Ref": "StreamFailureQueue"}]
+    statement = policy["PolicyDocument"]["Statement"][0]
+    assert statement["Effect"] == "Allow"
+    assert statement["Principal"] == {"Service": "events.amazonaws.com"}
+    assert statement["Action"] == "sqs:SendMessage"
+    assert statement["Resource"] == {"Fn::GetAtt": ["StreamFailureQueue", "Arn"]}
+    assert statement["Condition"]["ArnEquals"]["aws:SourceArn"] == rule_arns

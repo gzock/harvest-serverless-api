@@ -179,6 +179,34 @@ Resources:
     Properties:
       MessageRetentionPeriod: 1209600
       SqsManagedSseEnabled: true
+  ScheduleFailureQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+      - Ref: StreamFailureQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: sqs:SendMessage
+          Resource:
+            Fn::GetAtt:
+            - StreamFailureQueue
+            - Arn
+          Condition:
+            ArnEquals:
+              aws:SourceArn:
+              - Fn::GetAtt:
+                - BillDispatcherFunctionBillCalculationForEachMonth
+                - Arn
+              - Fn::GetAtt:
+                - GenerationRecoveryFunctionRecover
+                - Arn
+              - Fn::GetAtt:
+                - ImportRecoveryFunctionRecover
+                - Arn
   StreamFailureAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -1270,7 +1298,6 @@ Resources:
               MaximumRetryAttempts: 2
               MaximumEventAgeInSeconds: 3600
             DeadLetterConfig:
-              Type: SQS
               Arn:
                 Fn::GetAtt:
                 - StreamFailureQueue
@@ -1889,7 +1916,6 @@ Resources:
               MaximumRetryAttempts: 2
               MaximumEventAgeInSeconds: 300
             DeadLetterConfig:
-              Type: SQS
               Arn:
                 Fn::GetAtt:
                 - StreamFailureQueue
@@ -1945,7 +1971,6 @@ Resources:
               MaximumRetryAttempts: 2
               MaximumEventAgeInSeconds: 300
             DeadLetterConfig:
-              Type: SQS
               Arn:
                 Fn::GetAtt:
                 - StreamFailureQueue
