@@ -1,0 +1,89 @@
+import boto3
+
+
+class S3Driver:
+    def __init__(self, bucket_name=None, endpoint_url=None):
+        if not bucket_name:
+            raise ValueError
+
+        self.__client = boto3.client("s3", endpoint_url=endpoint_url)
+        try:
+            # self.__s3 = boto3.resource(service_name='s3', endpoint_url='http://127.0.0.1:9000')
+            if endpoint_url:
+                self.__s3 = boto3.resource(service_name="s3", endpoint_url=endpoint_url)
+            else:
+                self.__s3 = boto3.resource(service_name="s3")
+            if bucket_name:
+                self.set_bucket(bucket_name)
+        except Exception as e:
+            raise e
+
+    def get_bucket_list(self):
+        return [bucket.name for bucket in self.__s3.buckets.all()]
+
+    def set_bucket(self, bucket_name):
+        self.bucket_name = bucket_name
+        self.__bucket = self.__s3.Bucket(bucket_name)
+
+    def list_objs(self, prefix=None):
+        s3 = self.__client
+        args = {"Bucket": self.bucket_name}
+
+        if prefix:
+            args.update({"Prefix": prefix})
+
+        contents, seen = [], set()
+        while True:
+            page = s3.list_objects_v2(**args)
+            contents.extend(page.get("Contents", []))
+            if not page.get("IsTruncated"):
+                return contents
+            token = page.get("NextContinuationToken")
+            if not token or token in seen:
+                raise RuntimeError("S3 returned an invalid continuation token")
+            seen.add(token)
+            args["ContinuationToken"] = token
+
+    def get_obj(self, obj_key):
+        return self.__bucket.Object(obj_key)
+
+    def get_obj_bytes(self, obj_key):
+        obj = self.get_obj(obj_key)
+        return obj.get()["Body"].read()
+
+    def get_obj_tags(self, obj_key):
+        s3 = self.__client
+        ret = s3.get_object_tagging(Bucket=self.bucket_name, Key=obj_key)
+        if "TagSet" in ret:
+            return {tag["Key"]: tag["Value"] for tag in ret["TagSet"]}
+
+    def download_obj(self, obj_key, path):
+        return self.__bucket.download_file(obj_key, path)
+
+    def put_obj(self, key, data, tagset=""):
+        if isinstance(data, bytes):
+            return self.__bucket.put_object(Key=key, Body=data, Tagging=tagset)
+
+    def put_obj_tags(self, obj_key, tags):
+        s3 = self.__client
+
+        if isinstance(tags, dict):
+            tags = [{"Key": k, "Value": v} for k, v in tags.items()]
+        return s3.put_object_tagging(Bucket=self.bucket_name, Key=obj_key, Tagging={"TagSet": tags})
+
+    def delete_obj(self, key):
+        s3 = self.__client
+        return s3.delete_object(Bucket=self.bucket_name, Key=key)
+
+    def upload_obj(self, path, obj_key):
+        return self.__bucket.upload_file(path, obj_key)
+
+    def create_presigned_url(self, obj_key, expire=180):
+        s3 = self.__client
+        url = s3.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": self.bucket_name, "Key": obj_key},
+            ExpiresIn=expire,
+            HttpMethod="GET",
+        )
+        return url

@@ -1,0 +1,116 @@
+{
+  "functions": {
+    "ProjectsFunction": "harvest.handlers.projects.projects.lambda_handler",
+    "ProjectUsersFunction": "harvest.handlers.projects.users.lambda_handler",
+    "PlacesFunction": "harvest.handlers.places.places.lambda_handler",
+    "TargetsFunction": "harvest.handlers.targets.targets.lambda_handler",
+    "PhotosFunction": "harvest.handlers.photos.photos.lambda_handler",
+    "GenerateFunction": "harvest.handlers.generate.generate.lambda_handler",
+    "TemplateFunction": "harvest.handlers.template.template.lambda_handler",
+    "NotificationsDispatcherFunction": "harvest.handlers.notifications.dispatcher.lambda_handler",
+    "NotificationsFunction": "harvest.handlers.notifications.notifications.lambda_handler",
+    "CorporationFunction": "harvest.handlers.corporation.corporation.lambda_handler",
+    "BillDispatcherFunction": "harvest.handlers.corporation.bill_dispatcher.lambda_handler",
+    "GenerationJobsFunction": "harvest.http_api.lambda_handler",
+    "GenerationWorkerFunction": "harvest.jobs.worker_handler",
+    "GenerationOutboxFunction": "harvest.jobs.dispatch_handler",
+    "GenerationDeadLetterFunction": "harvest.jobs.dead_letter_handler",
+    "UploadSessionsFunction": "harvest.http_api.lambda_handler",
+    "GenerationRecoveryFunction": "harvest.jobs.reconciliation_handler",
+    "ImportRecoveryFunction": "harvest.import_recovery.handler"
+  },
+  "packages": [
+    [
+      "PyJWT",
+      "2.15.1"
+    ],
+    [
+      "annotated-types",
+      "0.8.0"
+    ],
+    [
+      "aws_lambda_powertools",
+      "3.37.0"
+    ],
+    [
+      "boto3",
+      "1.43.117"
+    ],
+    [
+      "botocore",
+      "1.43.117"
+    ],
+    [
+      "cffi",
+      "2.1.1"
+    ],
+    [
+      "chardet",
+      "7.7.0"
+    ],
+    [
+      "cryptography",
+      "50.0.2"
+    ],
+    [
+      "defusedxml",
+      "0.7.1"
+    ],
+    [
+      "et_xmlfile",
+      "2.0.0"
+    ],
+    [
+      "jmespath",
+      "1.1.0"
+    ],
+    [
+      "openpyxl",
+      "3.1.5"
+    ],
+    [
+      "pillow",
+      "13.0.0"
+    ],
+    [
+      "pycparser",
+      "3.12"
+    ],
+    [
+      "pydantic",
+      "2.14.1"
+    ],
+    [
+      "pydantic_core",
+      "2.50.1"
+    ],
+    [
+      "python-dateutil",
+      "2.9.0.post0"
+    ],
+    [
+      "s3transfer",
+      "0.19.3"
+    ],
+    [
+      "six",
+      "1.17.0"
+    ],
+    [
+      "typing-inspection",
+      "0.4.4"
+    ],
+    [
+      "typing_extensions",
+      "4.16.0"
+    ],
+    [
+      "urllib3",
+      "2.8.0"
+    ]
+  ],
+  "artifact_bytes": 82411481,
+  "mismatches": [],
+  "uv_lock_sha256": "c800441937a0ae0be13e718057d9d562a29597f58dc1ee84876f381cd8e3d332",
+  "template_sha256": "4a57b5b2f584200d48da91901c69c394e07b2bf9825d3f0471fa1aa72b4d8e39"
+}

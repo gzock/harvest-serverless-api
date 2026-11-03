@@ -1,0 +1,64 @@
+from harvest.auth import Auth
+from harvest.controllers.project_user_controller import ProjectUserController
+from harvest.exception import ActionDeniedError
+
+
+class ProjectUser:
+    project_id = None
+
+    def __init__(self, host=None, port=None):
+        self.user = ProjectUserController(host, port)
+        self.auth = Auth(host, port)
+
+    # common setters
+    def set_user_id(self, user_id):
+        self.user.set_user_id(user_id)
+        self.auth.set_user_id(user_id)
+
+    def set_project_id(self, project_id):
+        self.project_id = project_id
+        self.user.set_project_id(project_id)
+        self.auth.set_project_id(project_id)
+
+    # actions for project user
+    def list_users(self):
+        if not self.auth.guard("admin"):
+            raise ActionDeniedError()
+        return self.user.list()
+
+    def show_user(self, user_id):
+        if not self.auth.guard("admin"):
+            raise ActionDeniedError()
+        return self.user.show(user_id)
+
+    def join_user(self):
+        if not self.user.user_id:
+            raise ActionDeniedError()
+        return self.user.join()
+
+    def accept_user(self, user_id):
+        if not self.auth.guard("admin"):
+            raise ActionDeniedError()
+        return self.user.accept(user_id)
+
+    def delete_user(self, user_id):
+        if not self.auth.guard("admin"):
+            raise ActionDeniedError()
+        return self.user.delete(user_id)
+
+    def reject_user(self, user_id):
+        if not self.auth.guard("admin"):
+            raise ActionDeniedError()
+        return self.user.reject(user_id)
+
+    def update_role(self, user_id, role):
+        if not self.auth.guard("admin"):
+            raise ActionDeniedError()
+
+        if role not in ("guest", "reporter", "worker", "admin"):
+            raise ActionDeniedError()
+
+        if self.user.user_id == user_id:
+            raise ActionDeniedError()
+
+        return self.user.update_role(role, user_id)

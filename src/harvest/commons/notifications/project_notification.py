@@ -1,0 +1,57 @@
+from harvest.utils.sorters import parse_timestamp
+
+from harvest.commons.notifications.base_notification import BaseNotification
+
+
+class ProjectNotification(BaseNotification):
+    update_name = (
+        "{project_name}: {user_name}さんがプロジェクト名を{old_name}から{name}に変更しました"
+    )
+    update_start_on = (
+        "{project_name}: {user_name}さんがプロジェクトの開始日を{old_date}から{date}に変更しました"
+    )
+    update_complete_on = (
+        "{project_name}: {user_name}さんがプロジェクトの終了日を{old_date}から{date}に変更しました"
+    )
+    delete = "{project_name}: 削除されました"
+
+    def __init__(self, stream_record, host, port):
+        super().set_record_type("プロジェクト")
+        super().__init__(stream_record, host, port)
+
+    def iso8601_to_simple(self, iso8601):
+        dt = parse_timestamp(iso8601)
+        return dt.strftime("%Y/%m/%d")
+
+    def select_message(self):
+        if self.is_insert_event:
+            pass
+
+        elif self.is_modify_event:
+            if self.old_record["name"] != self.record["name"]:
+                self.message = self.update_name
+                self.needs_strings_dict.update(
+                    {"old_name": self.old_record["name"], "name": self.record["name"]}
+                )
+
+            elif self.old_record["start_on"] != self.record["start_on"]:
+                self.message = self.update_start_on
+                self.needs_strings_dict.update(
+                    {
+                        "old_date": self.iso8601_to_simple(self.old_record["start_on"]),
+                        "date": self.iso8601_to_simple(self.record["start_on"]),
+                    }
+                )
+
+            elif self.old_record["complete_on"] != self.record["complete_on"]:
+                self.message = self.update_complete_on
+                self.needs_strings_dict.update(
+                    {
+                        "old_date": self.iso8601_to_simple(self.old_record["complete_on"]),
+                        "date": self.iso8601_to_simple(self.record["complete_on"]),
+                    }
+                )
+
+        elif self.is_remove_event:
+            self.message = self.delete
+            self.needs_strings_dict.update({"name": self.record["name"]})

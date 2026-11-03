@@ -1,637 +1,1991 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-    harvest
-
-    Sample SAM Template for harvest
-
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Description: Harvest API. Existing Cognito, DynamoDB and S3 resources are supplied
+  explicitly.
+Parameters:
+  EnvironmentName:
+    Type: String
+    AllowedValues:
+    - dev
+    - staging
+    - prod
+    Default: dev
+  CorsOrigin:
+    Type: String
+    AllowedPattern: https?://[^/]+
+    Description: Exact web origin including scheme, without a trailing slash.
+  CognitoUserPoolId:
+    Type: String
+    AllowedPattern: '[a-z0-9-]+_[A-Za-z0-9]+'
+  CognitoClientId:
+    Type: String
+    MinLength: 1
+  ProjectsTableName:
+    Type: String
+    Description: Existing table; managed separately. No table replacement is performed.
+  PlacesTableName:
+    Type: String
+    Description: Existing table; managed separately. No table replacement is performed.
+  TargetsTableName:
+    Type: String
+    Description: Existing table; managed separately. No table replacement is performed.
+  RolesTableName:
+    Type: String
+    Description: Existing table; managed separately. No table replacement is performed.
+  NotificationsTableName:
+    Type: String
+    Description: Existing table; managed separately. No table replacement is performed.
+  BillsTableName:
+    Type: String
+    Description: Existing table; managed separately. No table replacement is performed.
+  PhotosBucketName:
+    Type: String
+    MinLength: 3
+    Description: Existing private S3 bucket.
+  GeneratedBucketName:
+    Type: String
+    MinLength: 3
+    Description: Existing private S3 bucket.
+  RepositoryBucketName:
+    Type: String
+    MinLength: 3
+    Description: Existing private S3 bucket.
+  ProjectsStreamArn:
+    Type: String
+    AllowedPattern: arn:[^:]+:dynamodb:[^:]+:[0-9]+:table/.+/stream/.+
+  PlacesStreamArn:
+    Type: String
+    AllowedPattern: arn:[^:]+:dynamodb:[^:]+:[0-9]+:table/.+/stream/.+
+  TargetsStreamArn:
+    Type: String
+    AllowedPattern: arn:[^:]+:dynamodb:[^:]+:[0-9]+:table/.+/stream/.+
+  RolesStreamArn:
+    Type: String
+    AllowedPattern: arn:[^:]+:dynamodb:[^:]+:[0-9]+:table/.+/stream/.+
+  LogRetentionDays:
+    Type: Number
+    Default: 30
+    AllowedValues:
+    - 7
+    - 14
+    - 30
+    - 60
+    - 90
+    - 180
+    - 365
+  UploadActorHourlyLimit:
+    Type: Number
+    MinValue: 1
+    Default: 100
+  UploadTargetWindowLimit:
+    Type: Number
+    MinValue: 1
+    Default: 10
+  UploadTargetWindowSeconds:
+    Type: Number
+    MinValue: 1
+    Default: 900
 Globals:
-    Function:
-        Timeout: 30
-        MemorySize: 512
-    Api:
-        Cors: "'app.harvest.tools'"
-
+  Function:
+    Runtime: python3.14
+    Architectures:
+    - x86_64
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        COGNITO_USER_POOL_ID:
+          Ref: CognitoUserPoolId
+        COGNITO_CLIENT_ID:
+          Ref: CognitoClientId
+        COGNITO_REGION:
+          Ref: AWS::Region
+        CORS_ORIGIN:
+          Ref: CorsOrigin
+        DYNAMO_HOST: ''
+        DYNAMO_PORT: ''
+        POWERTOOLS_SERVICE_NAME: harvest-api
+        LOG_LEVEL: INFO
+        TABLE_PROJECTS:
+          Ref: ProjectsTableName
+        TABLE_PLACES:
+          Ref: PlacesTableName
+        TABLE_TARGETS:
+          Ref: TargetsTableName
+        TABLE_ROLES:
+          Ref: RolesTableName
+        TABLE_NOTIFICATIONS:
+          Ref: NotificationsTableName
+        TABLE_BILLS:
+          Ref: BillsTableName
+        PHOTOS_BUCKET_NAME:
+          Ref: PhotosBucketName
+        GENERATED_BUCKET_NAME:
+          Ref: GeneratedBucketName
+        REPOSITORY_BUCKET_NAME:
+          Ref: RepositoryBucketName
+        GENERATION_JOBS_TABLE:
+          Ref: GenerationJobsTable
+        GENERATION_QUEUE_URL:
+          Ref: GenerationQueue
+        UPLOAD_BUCKET_NAME:
+          Ref: UploadBucket
+        UPLOAD_SESSIONS_TABLE:
+          Ref: UploadSessionsTable
+        UPLOAD_ACTOR_HOURLY_LIMIT:
+          Ref: UploadActorHourlyLimit
+        UPLOAD_TARGET_WINDOW_LIMIT:
+          Ref: UploadTargetWindowLimit
+        UPLOAD_TARGET_WINDOW_SECONDS:
+          Ref: UploadTargetWindowSeconds
+        TABLE_IMPORTS:
+          Ref: ImportsTable
 Resources:
-    #HarvestApi:
-    #    Type: AWS::Serverless::Api
-    #    Properties:
-    #        StageName: Prod
-    #        GatewayResponses:
-    #          UNAUTHORIZED:
-    #            StatusCode: 401
-    #            ResponseTemplates:
-    #              "application/json": '{ "message": $context.error.messageString }'
-    #            ResponseParameters:
-    #              Paths:
-    #                path-key: "'value'"
-    #              QueryStrings:
-    #                query-string-key: "'value'"
-    #              Headers:
-    #                Access-Control-Expose-Headers: "'WWW-Authenticate'"
-    #                Access-Control-Allow-Origin: "'*'"
-    #                WWW-Authenticate: >-
-    #                  'Bearer realm="admin"'
-    #HarvestApi:
-    #    Type: AWS::Serverless::Api
-    #    Properties:
-    #        StageName: Prod
-    #        DefinitionBody:
-    #            securityDefinitions:
-    #                cognitoUserPool:
-    #                    type: apiKey
-    #                    name: "Authorization"
-    #                    in: header
-    #                    x-amazon-apigateway-authtype: cognito_user_pools
-    #                    x-amazon-apigateway-authorizer:
-    #                        type: cognito_user_pools
-    #                        providerARNs:
-    #                            - arn:aws:cognito-idp:ap-northeast-1:405369695225:userpool/ap-northeast-1_KrEPljcrG
-    #            paths:
-    #                "/":
-    #                    get:
-    #                        security:
-    #                            - cognitoUserPool: []
-        #Cors:
-        #    AllowMethods: "'OPTIONS,GET,POST,PUT,DELETE'"
-        #    AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-        #    AllowOrigin: "'*'"
-        #    AllowCredentials: "'true'"
-        # https://github.com/awslabs/serverless-application-model/blob/master/examples/2016-10-31/api_cognito_auth/template.yaml
-
-    ProjectsFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            Timeout: 120
-            CodeUri: routes
-            Handler: projects/projects.lambda_handler #TODO: ここを複数作る必要がある？？
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /projects
-                        Method: options
-                GetProjects:
-                    Type: Api
-                    Properties:
-                        Path: /projects
-                        Method: get
-                CreateProject:
-                    Type: Api
-                    Properties:
-                        Path: /projects
-                        Method: post
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}
-                        Method: options
-                GetProject:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}
-                        Method: get
-                UpdateProject:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}
-                        Method: put
-                DeleteProject:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}
-                        Method: delete
-                ForCORS3:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/import
-                        Method: options
-                BatchImport:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/import
-                        Method: POST
-
-    ProjectUsersFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: routes
-            Handler: projects/users.lambda_handler #TODO: ここを複数作る必要がある？？
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/users
-                        Method: options
-                GetUsers:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/users
-                        Method: GET
-                CreateUser:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/users
-                        Method: POST
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/users/{user_id}
-                        Method: options
-                GetUser:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/users/{user_id}
-                        Method: GET
-                UpdateUser:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/users/{user_id}
-                        Method: PUT
-                DeleteUser:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/users/{user_id}
-                        Method: DELETE
-
-    PlacesFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: routes
-            Handler: places/places.lambda_handler #TODO: ここを複数作る必要がある？？
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places
-                        Method: options
-                GetPlaces: #プロジェクト配下の全てのplaceを取得
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places
-                        Method: get
-                CreatePlace: #project配下(root)に新規placeを作成
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places
-                        Method: post
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}
-                        Method: options
-                GetPlace: #place単体の情報を取得
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}
-                        Method: get
-                GetPlaceChildren: #指定されたplaceのchildrenを取得
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}/children
-                        Method: get
-                ForCORS3:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}/children
-                        Method: options
-                CreatePlaceOfChild: #指定されたplace_id配下にplaceを作成
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}
-                        Method: post
-                UpdatePlace: #placeの名前など単体の情報の何かを更新
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}
-                        Method: put
-                DeletePlace: #place単体を削除
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}
-                        Method: delete
-
-    TargetsFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: routes
-            Handler: targets/targets.lambda_handler #TODO: ここを複数作る必要がある？？
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets
-                        Method: options
-                #GET: #プロジェクト配下の全てのplaceを取得 #place側と統合予定
-                #    Type: Api
-                #    Properties:
-                #        Path: /projects/{project_id}/targets
-                #        Method: get
-                GetTarget: #target単体の情報を取得
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}
-                        Method: get
-                #GET_CHILDREN: #指定されたplaceのchildrenを取得 #place側と統合予定
-                #    Type: Api
-                #    Properties:
-                #        Path: /projects/{project_id}/places/{place_id}/targets
-                #        Method: get
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}
-                        Method: options
-                UpdateTarget: #targetの名前など単体の情報の何かを更新
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}
-                        Method: put
-                DeleteTarget: #target単体を削除
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}
-                        Method: delete
-                CreateTargetOnProject: #project配下(root)に新規placeを作成
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets
-                        Method: post
-                ForCORS3:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}/targets
-                        Method: options
-                CreateTargetOnPlace: #指定されたplace_id配下にtargetを作成
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/places/{place_id}/targets
-                        Method: post
-
-    PhotosFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: routes
-            Handler: photos/photos.lambda_handler #TODO: ここを複数作る必要がある？？
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}/photos
-                        Method: options
-                GetAllPhotosForTarget: #target単体配下の写真全てを取得
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}/photos
-                        Method: get
-                CreatePhoto: #target単体配下に写真を追加
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}/photos
-                        Method: post
-                AdoptPhoto: #写真を採用
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}/photos
-                        Method: put
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
-                        Method: options
-                GetPhoto: #target単体配下の写真単体を取得
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
-                        Method: get
-                UpdatePhoto: #target単体配下の写真の何かを変更
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
-                        Method: put
-                DeletePhoto: #target単体配下の写真単体を削除
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
-                        Method: delete
-    GenerateFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            Timeout: 300
-            MemorySize: 3008
-            CodeUri: routes
-            Handler: generate/generate.lambda_handler #TODO: ここを複数作る必要がある？？
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/generate
-                        Method: options
-                GetGeneratedHistory: #生成済み一覧を取得
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/generate
-                        Method: get
-                InvokeGenerate: #生成
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/generate
-                        Method: post
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/generate/{generated_file_id}/download
-                        Method: options
-                GneratedFileDownload: #target単体配下に写真を追加
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/generate/{generated_file_id}/download
-                        Method: put
-    TemplateFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: routes
-            Handler: template/template.lambda_handler #TODO: ここを複数作る必要がある？？
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/templates
-                        Method: options
-                ListCustomExcelTemplate:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/templates
-                        Method: get
-                CreateCustomExcelTemplate:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/templates
-                        Method: post
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/templates/{template_id}
-                        Method: options
-                GetCustomExcelTemplate:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/templates/{template_id}
-                        Method: get
-                UpdateCustomExcelTemplate:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/templates/{template_id}
-                        Method: put
-                DeleteCustomExcelTemplate:
-                    Type: Api
-                    Properties:
-                        Path: /projects/{project_id}/templates/{template_id}
-                        Method: delete
-    NotificationsDispatcherFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            Timeout: 60
-            CodeUri: routes
-            Handler: notifications/dispatcher.lambda_handler
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ProjectsTableTrigger:
-                    Type: DynamoDB
-                    Properties:
-                      Stream: arn:aws:dynamodb:ap-northeast-1:405369695225:table/Projects/stream/2019-07-02T23:03:16.181
-                      StartingPosition: TRIM_HORIZON
-                      BatchSize: 10
-                      Enabled: true
-                PlacesTableTrigger:
-                    Type: DynamoDB
-                    Properties:
-                      Stream: arn:aws:dynamodb:ap-northeast-1:405369695225:table/Places/stream/2019-07-02T23:03:10.927
-                      StartingPosition: TRIM_HORIZON
-                      BatchSize: 10
-                      Enabled: true
-                TargetsTableTrigger:
-                    Type: DynamoDB
-                    Properties:
-                      Stream: arn:aws:dynamodb:ap-northeast-1:405369695225:table/Targets/stream/2019-07-02T23:03:23.106
-                      StartingPosition: TRIM_HORIZON
-                      BatchSize: 10
-                      Enabled: true
-                RolesTableTrigger:
-                    Type: DynamoDB
-                    Properties:
-                      Stream: arn:aws:dynamodb:ap-northeast-1:405369695225:table/Roles/stream/2019-07-02T23:03:19.811
-                      StartingPosition: TRIM_HORIZON
-                      BatchSize: 10
-                      Enabled: true
-    NotificationsFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: routes
-            Handler: notifications/notifications.lambda_handler
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /users/{user_id}/notifications
-                        Method: options
-                GetAllNotifications:
-                    Type: Api
-                    Properties:
-                        Path: /users/{user_id}/notifications
-                        Method: get
-                ReadNotifications:
-                    Type: Api
-                    Properties:
-                        Path: /users/{user_id}/notifications
-                        Method: put
-                DeleteNotifications:
-                    Type: Api
-                    Properties:
-                        Path: /users/{user_id}/notifications
-                        Method: delete
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /users/{user_id}/notifications/{notification_id}
-                        Method: options
-                GetNotification:
-                    Type: Api
-                    Properties:
-                        Path: /users/{user_id}/notifications/{notification_id}
-                        Method: get
-                ReadNotification:
-                    Type: Api
-                    Properties:
-                        Path: /users/{user_id}/notifications/{notification_id}
-                        Method: put
-                DeleteNotification:
-                    Type: Api
-                    Properties:
-                        Path: /users/{user_id}/notifications/{notification_id}
-                        Method: delete
-    CorporationFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            CodeUri: routes
-            Handler: corporation/corporation.lambda_handler
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                ForCORS:
-                    Type: Api
-                    Properties:
-                        Path: /corporation
-                        Method: options
-                GetCorporationInfo:
-                    Type: Api
-                    Properties:
-                        Path: /corporation
-                        Method: get
-                ForCORS2:
-                    Type: Api
-                    Properties:
-                        Path: /corporation/users
-                        Method: options
-                GetCorporationJoinUsers:
-                    Type: Api
-                    Properties:
-                        Path: /corporation/users
-                        Method: get
-                CreateCorporationJoinUsers:
-                    Type: Api
-                    Properties:
-                        Path: /corporation/users
-                        Method: post
-                ForCORS3:
-                    Type: Api
-                    Properties:
-                        Path: /corporation/users/{user_id}
-                        Method: options
-                GetCorporationJoinUser:
-                    Type: Api
-                    Properties:
-                        Path: /corporation/users/{user_id}
-                        Method: get
-                UpdateCorporationJoinUser:
-                    Type: Api
-                    Properties:
-                        Path: /corporation/users/{user_id}
-                        Method: put
-                DeleteCorporationJoinUser:
-                    Type: Api
-                    Properties:
-                        Path: /corporation/users/{user_id}
-                        Method: delete
-                GetBilling:
-                    Type: Api
-                    Properties:
-                        Path: /corporation/billing
-                        Method: get
-    BillDispatcherFunction:
-        Type: AWS::Serverless::Function
-        Properties:
-            Timeout: 60
-            CodeUri: routes
-            Handler: corporation/bill_dispatcher.lambda_handler
-            Runtime: python3.6
-            Environment:
-                Variables:
-                    PYTHONPATH: /var/task/site-packages
-                    DYNAMO_HOST: ""
-                    DYNAMO_PORT: ""
-            Events:
-                BillCalculationForEachMonth:
-                    Type: Schedule
-                    Properties:
-                      Schedule: cron(10 0 26 * ? *)
-#    HarvestApi:
-#        Type: AWS::Serverless::Api
-#        Properties:
-#            StageName: Prod
-#            Auth:
-#                DefaultAuthorizer: HarvestAuthorizer
-#                Authorizers:
-#                    HarvestAuthorizer:
-#                        UserPoolArn: "arn:aws:cognito-idp:ap-northeast-1:405369695225:userpool/ap-northeast-1_KrEPljcrG"
-#                        Identity:
-#                            Header: "Authorization"
-#    Deployment: 
-#        DependsOn: PhotosFunction
-#        Type: AWS::ApiGateway::Deployment
-#        Properties: 
-#          RestApiId: 
-#            Ref: HarvestApi
-#          StageName: Prod
-
-#Outputs:
-#
-#    HelloWorldApi:
-#      Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-#      Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-#
-#    HelloWorldFunction:
-#      Description: "Hello World Lambda Function ARN"
-#      Value: !GetAtt HelloWorldFunction.Arn
-#
-#    HelloWorldFunctionIamRole:
-#      Description: "Implicit IAM Role created for Hello World function"
-#      Value: !GetAtt HelloWorldFunctionRole.Arn
+  HarvestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName:
+        Ref: EnvironmentName
+      EndpointConfiguration: REGIONAL
+      Cors:
+        AllowOrigin:
+          Fn::Sub: '''${CorsOrigin}'''
+        AllowHeaders: '''Content-Type,Authorization,Idempotency-Key'''
+        AllowMethods: '''GET,POST,PUT,DELETE,OPTIONS'''
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn:
+              Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+            Identity:
+              Header: Authorization
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin:
+                Fn::Sub: '''${CorsOrigin}'''
+              Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin:
+                Fn::Sub: '''${CorsOrigin}'''
+              Access-Control-Allow-Headers: '''Content-Type,Authorization'''
+  StreamFailureQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+  ScheduleFailureQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+      - Ref: StreamFailureQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: sqs:SendMessage
+          Resource:
+            Fn::GetAtt:
+            - StreamFailureQueue
+            - Arn
+          Condition:
+            ArnEquals:
+              aws:SourceArn:
+              - Fn::GetAtt:
+                - BillDispatcherFunctionBillCalculationForEachMonth
+                - Arn
+              - Fn::GetAtt:
+                - GenerationRecoveryFunctionRecover
+                - Arn
+              - Fn::GetAtt:
+                - ImportRecoveryFunctionRecover
+                - Arn
+  StreamFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Failed DynamoDB stream records require redrive from StreamFailureQueue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+      - Name: QueueName
+        Value:
+          Fn::GetAtt:
+          - StreamFailureQueue
+          - QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+  ProjectsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 120
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.projects.projects.lambda_handler
+      Events:
+        GetProjects:
+          Type: Api
+          Properties:
+            Path: /projects
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        CreateProject:
+          Type: Api
+          Properties:
+            Path: /projects
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        GetProject:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        UpdateProject:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeleteProject:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+        BatchImport:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/import
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: &id001
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:BatchGetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:BatchWriteItem
+          - dynamodb:ConditionCheckItem
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          - s3:PutObject
+          - s3:PutObjectTagging
+          - s3:DeleteObject
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+          Resource:
+            Fn::GetAtt:
+            - ImportsTable
+            - Arn
+    Metadata:
+      SkipBuild: true
+  ProjectsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${ProjectsFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  ProjectUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.projects.users.lambda_handler
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/users
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        CreateUser:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/users
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        GetUser:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/users/{user_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        UpdateUser:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/users/{user_id}
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeleteUser:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/users/{user_id}
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+    Metadata:
+      SkipBuild: true
+  ProjectUsersFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${ProjectUsersFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  PlacesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.places.places.lambda_handler
+      Events:
+        GetPlaces:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/places
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        CreatePlace:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/places
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        GetPlace:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/places/{place_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        GetPlaceChildren:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/places/{place_id}/children
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        CreatePlaceOfChild:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/places/{place_id}
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        UpdatePlace:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/places/{place_id}
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeletePlace:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/places/{place_id}
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          - s3:PutObject
+          - s3:PutObjectTagging
+          - s3:DeleteObject
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+    Metadata:
+      SkipBuild: true
+  PlacesFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${PlacesFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  TargetsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.targets.targets.lambda_handler
+      Events:
+        GetTarget:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        UpdateTarget:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeleteTarget:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+        CreateTargetOnProject:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        CreateTargetOnPlace:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/places/{place_id}/targets
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          - s3:PutObject
+          - s3:PutObjectTagging
+          - s3:DeleteObject
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+    Metadata:
+      SkipBuild: true
+  TargetsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${TargetsFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  PhotosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.photos.photos.lambda_handler
+      Events:
+        GetAllPhotosForTarget:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}/photos
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        CreatePhoto:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}/photos
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        AdoptPhoto:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}/photos
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        GetPhoto:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        UpdatePhoto:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeletePhoto:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}/photos/{photo_id}
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          - s3:PutObject
+          - s3:PutObjectTagging
+          - s3:DeleteObject
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+    Metadata:
+      SkipBuild: true
+  PhotosFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${PhotosFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  GenerateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 300
+      MemorySize: 3008
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.generate.generate.lambda_handler
+      Events:
+        GetGeneratedHistory:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/generate
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        InvokeGenerate:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/generate
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        GneratedFileDownload:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/generate/{generated_file_id}/download
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: &id002
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:BatchGetItem
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id002
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}/index/*
+        - Effect: Allow
+          Action: *id002
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}/index/*
+        - Effect: Allow
+          Action: *id002
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${RepositoryBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${RepositoryBucketName}/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${GeneratedBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          - s3:PutObject
+          - s3:PutObjectTagging
+          - s3:DeleteObject
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${GeneratedBucketName}/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+    Metadata:
+      SkipBuild: true
+  GenerateFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${GenerateFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  TemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.template.template.lambda_handler
+      Events:
+        ListCustomExcelTemplate:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/templates
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        CreateCustomExcelTemplate:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/templates
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        GetCustomExcelTemplate:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/templates/{template_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        UpdateCustomExcelTemplate:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/templates/{template_id}
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeleteCustomExcelTemplate:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/templates/{template_id}
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id002
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id002
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${RepositoryBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          - s3:PutObject
+          - s3:PutObjectTagging
+          - s3:DeleteObject
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${RepositoryBucketName}/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+    Metadata:
+      SkipBuild: true
+  TemplateFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${TemplateFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  NotificationsDispatcherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.notifications.dispatcher.lambda_handler
+      Events:
+        ProjectsTableTrigger:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Ref: ProjectsStreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: true
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 3
+            MaximumRecordAgeInSeconds: 86400
+            DestinationConfig:
+              OnFailure:
+                Type: SQS
+                Destination:
+                  Fn::GetAtt:
+                  - StreamFailureQueue
+                  - Arn
+        PlacesTableTrigger:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Ref: PlacesStreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: true
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 3
+            MaximumRecordAgeInSeconds: 86400
+            DestinationConfig:
+              OnFailure:
+                Type: SQS
+                Destination:
+                  Fn::GetAtt:
+                  - StreamFailureQueue
+                  - Arn
+        TargetsTableTrigger:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Ref: TargetsStreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: true
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 3
+            MaximumRecordAgeInSeconds: 86400
+            DestinationConfig:
+              OnFailure:
+                Type: SQS
+                Destination:
+                  Fn::GetAtt:
+                  - StreamFailureQueue
+                  - Arn
+        RolesTableTrigger:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Ref: RolesStreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: true
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 3
+            MaximumRecordAgeInSeconds: 86400
+            DestinationConfig:
+              OnFailure:
+                Type: SQS
+                Destination:
+                  Fn::GetAtt:
+                  - StreamFailureQueue
+                  - Arn
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NotificationsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NotificationsTableName}/index/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+        - Effect: Allow
+          Action:
+          - dynamodb:DescribeStream
+          - dynamodb:GetRecords
+          - dynamodb:GetShardIterator
+          Resource:
+          - Ref: ProjectsStreamArn
+        - Effect: Allow
+          Action:
+          - dynamodb:DescribeStream
+          - dynamodb:GetRecords
+          - dynamodb:GetShardIterator
+          Resource:
+          - Ref: PlacesStreamArn
+        - Effect: Allow
+          Action:
+          - dynamodb:DescribeStream
+          - dynamodb:GetRecords
+          - dynamodb:GetShardIterator
+          Resource:
+          - Ref: TargetsStreamArn
+        - Effect: Allow
+          Action:
+          - dynamodb:DescribeStream
+          - dynamodb:GetRecords
+          - dynamodb:GetShardIterator
+          Resource:
+          - Ref: RolesStreamArn
+        - Effect: Allow
+          Action:
+          - sqs:SendMessage
+          Resource:
+          - Fn::GetAtt:
+            - StreamFailureQueue
+            - Arn
+    Metadata:
+      SkipBuild: true
+  NotificationsDispatcherFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${NotificationsDispatcherFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  NotificationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.notifications.notifications.lambda_handler
+      Events:
+        GetAllNotifications:
+          Type: Api
+          Properties:
+            Path: /users/{user_id}/notifications
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        ReadNotifications:
+          Type: Api
+          Properties:
+            Path: /users/{user_id}/notifications
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeleteNotifications:
+          Type: Api
+          Properties:
+            Path: /users/{user_id}/notifications
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+        GetNotification:
+          Type: Api
+          Properties:
+            Path: /users/{user_id}/notifications/{notification_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        ReadNotification:
+          Type: Api
+          Properties:
+            Path: /users/{user_id}/notifications/{notification_id}
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeleteNotification:
+          Type: Api
+          Properties:
+            Path: /users/{user_id}/notifications/{notification_id}
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NotificationsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NotificationsTableName}/index/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+    Metadata:
+      SkipBuild: true
+  NotificationsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${NotificationsFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  CorporationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.corporation.corporation.lambda_handler
+      Events:
+        GetCorporationInfo:
+          Type: Api
+          Properties:
+            Path: /corporation
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        GetCorporationJoinUsers:
+          Type: Api
+          Properties:
+            Path: /corporation/users
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        CreateCorporationJoinUsers:
+          Type: Api
+          Properties:
+            Path: /corporation/users
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        GetCorporationJoinUser:
+          Type: Api
+          Properties:
+            Path: /corporation/users/{user_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+        UpdateCorporationJoinUser:
+          Type: Api
+          Properties:
+            Path: /corporation/users/{user_id}
+            Method: PUT
+            RestApiId:
+              Ref: HarvestApi
+        DeleteCorporationJoinUser:
+          Type: Api
+          Properties:
+            Path: /corporation/users/{user_id}
+            Method: DELETE
+            RestApiId:
+              Ref: HarvestApi
+        GetBilling:
+          Type: Api
+          Properties:
+            Path: /corporation/billing
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${BillsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${BillsTableName}/index/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          - cognito-idp:AdminCreateUser
+          - cognito-idp:AdminAddUserToGroup
+          - cognito-idp:AdminSetUserPassword
+          - cognito-idp:AdminDeleteUser
+          - cognito-idp:AdminDisableUser
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+    Metadata:
+      SkipBuild: true
+  CorporationFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${CorporationFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  BillDispatcherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      CodeUri: .build/lambda/
+      Handler: harvest.handlers.corporation.bill_dispatcher.lambda_handler
+      Events:
+        BillCalculationForEachMonth:
+          Type: Schedule
+          Properties:
+            Schedule: cron(10 0 26 * ? *)
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+              MaximumEventAgeInSeconds: 3600
+            DeadLetterConfig:
+              Arn:
+                Fn::GetAtt:
+                - StreamFailureQueue
+                - Arn
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action: *id001
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${BillsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${BillsTableName}/index/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+    Metadata:
+      SkipBuild: true
+  BillDispatcherFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${BillDispatcherFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  GenerationJobsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: job_id
+        AttributeType: S
+      - AttributeName: status
+        AttributeType: S
+      - AttributeName: updated_at
+        AttributeType: N
+      KeySchema:
+      - AttributeName: job_id
+        KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      GlobalSecondaryIndexes:
+      - IndexName: StatusUpdatedIndex
+        KeySchema:
+        - AttributeName: status
+          KeyType: HASH
+        - AttributeName: updated_at
+          KeyType: RANGE
+        Projection:
+          ProjectionType: KEYS_ONLY
+  GenerationDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+  GenerationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 1800
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+          - GenerationDeadLetterQueue
+          - Arn
+        maxReceiveCount: 5
+  GenerationJobsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.http_api.lambda_handler
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          Resource:
+            Fn::GetAtt:
+            - GenerationJobsTable
+            - Arn
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:s3:::${GeneratedBucketName}/*
+      Events:
+        CreateJob:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/generation-jobs
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        GetJob:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/generation-jobs/{job_id}
+            Method: GET
+            RestApiId:
+              Ref: HarvestApi
+  GenerationWorkerFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.jobs.worker_handler
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: &id003
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:BatchGetItem
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id003
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}/index/*
+        - Effect: Allow
+          Action: *id003
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}/index/*
+        - Effect: Allow
+          Action: *id003
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${RepositoryBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${RepositoryBucketName}/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${GeneratedBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          - s3:PutObject
+          - s3:PutObjectTagging
+          - s3:DeleteObject
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${GeneratedBucketName}/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          Resource:
+            Fn::GetAtt:
+            - GenerationJobsTable
+            - Arn
+      Timeout: 300
+      MemorySize: 3008
+      EphemeralStorage:
+        Size: 2048
+      ReservedConcurrentExecutions: 5
+      Events:
+        Jobs:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - GenerationQueue
+              - Arn
+            BatchSize: 1
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+  GenerationOutboxFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.jobs.dispatch_handler
+      Policies:
+      - SQSSendMessagePolicy:
+          QueueName:
+            Fn::GetAtt:
+            - GenerationQueue
+            - QueueName
+      - SQSSendMessagePolicy:
+          QueueName:
+            Fn::GetAtt:
+            - StreamFailureQueue
+            - QueueName
+      Events:
+        Outbox:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Fn::GetAtt:
+              - GenerationJobsTable
+              - StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 10
+            MaximumRecordAgeInSeconds: 86400
+            DestinationConfig:
+              OnFailure:
+                Type: SQS
+                Destination:
+                  Fn::GetAtt:
+                  - StreamFailureQueue
+                  - Arn
+  GenerationJobsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${GenerationJobsFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  GenerationWorkerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${GenerationWorkerFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  GenerationOutboxFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${GenerationOutboxFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  GenerationFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Generation jobs exhausted retries; inspect failed jobs and
+        DLQ before redrive.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+      - Name: QueueName
+        Value:
+          Fn::GetAtt:
+          - GenerationDeadLetterQueue
+          - QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+  GenerationDeadLetterFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.jobs.dead_letter_handler
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+          Resource:
+            Fn::GetAtt:
+            - GenerationJobsTable
+            - Arn
+      Events:
+        ExhaustedJobs:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - GenerationDeadLetterQueue
+              - Arn
+            BatchSize: 10
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+  GenerationDeadLetterFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${GenerationDeadLetterFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  GenerationExhaustedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Generation jobs exhausted retries and were marked failed.
+      Namespace: Harvest
+      MetricName: ExhaustedJobs
+      Dimensions:
+      - Name: service
+        Value: generation-worker
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+  UploadSessionsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: session_id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: session_id
+        KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+  UploadBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+        - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+        - AllowedOrigins:
+          - Ref: CorsOrigin
+          AllowedMethods:
+          - POST
+          AllowedHeaders:
+          - Content-Type
+          ExposedHeaders:
+          - x-amz-version-id
+          MaxAge: 300
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireQuarantine
+          Status: Enabled
+          Prefix: quarantine/
+          ExpirationInDays: 8
+          NoncurrentVersionExpiration:
+            NoncurrentDays: 8
+          AbortIncompleteMultipartUpload:
+            DaysAfterInitiation: 1
+  UploadBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: UploadBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Deny
+          Principal: '*'
+          Action: s3:*
+          Resource:
+          - Fn::GetAtt:
+            - UploadBucket
+            - Arn
+          - Fn::Sub: ${UploadBucket.Arn}/*
+          Condition:
+            Bool:
+              aws:SecureTransport: 'false'
+  UploadSessionsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.http_api.lambda_handler
+      Timeout: 60
+      MemorySize: 1024
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: &id004
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:BatchGetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:BatchWriteItem
+          - dynamodb:ConditionCheckItem
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}/index/*
+        - Effect: Allow
+          Action: *id004
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}/index/*
+        - Effect: Allow
+          Action: *id004
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}/index/*
+        - Effect: Allow
+          Action: *id004
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}/index/*
+        - Effect: Allow
+          Action:
+          - s3:ListBucket
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}
+        - Effect: Allow
+          Action:
+          - s3:GetObject
+          - s3:GetObjectTagging
+          - s3:PutObject
+          - s3:PutObjectTagging
+          - s3:DeleteObject
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:s3:::${PhotosBucketName}/*
+        - Effect: Allow
+          Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminListGroupsForUser
+          - cognito-idp:GetGroup
+          - cognito-idp:ListGroups
+          - cognito-idp:ListUsers
+          - cognito-idp:ListUsersInGroup
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          Resource:
+            Fn::GetAtt:
+            - UploadSessionsTable
+            - Arn
+        - Effect: Allow
+          Action:
+          - s3:PutObject
+          - s3:GetObject
+          - s3:GetObjectVersion
+          Resource:
+            Fn::Sub: ${UploadBucket.Arn}/quarantine/*
+      Events:
+        CreateUpload:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}/upload-sessions
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+        CompleteUpload:
+          Type: Api
+          Properties:
+            Path: /projects/{project_id}/targets/{target_id}/upload-sessions/{session_id}/complete
+            Method: POST
+            RestApiId:
+              Ref: HarvestApi
+  UploadSessionsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${UploadSessionsFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  ImportsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: project_id
+        AttributeType: S
+      - AttributeName: operation_id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: project_id
+        KeyType: HASH
+      - AttributeName: operation_id
+        KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+  GenerationRecoveryFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.jobs.reconciliation_handler
+      Timeout: 60
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          Resource:
+            Fn::GetAtt:
+            - GenerationJobsTable
+            - Arn
+        - Effect: Allow
+          Action:
+          - dynamodb:Query
+          Resource:
+            Fn::Sub: ${GenerationJobsTable.Arn}/index/StatusUpdatedIndex
+      - SQSSendMessagePolicy:
+          QueueName:
+            Fn::GetAtt:
+            - GenerationQueue
+            - QueueName
+      Events:
+        Recover:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+              MaximumEventAgeInSeconds: 300
+            DeadLetterConfig:
+              Arn:
+                Fn::GetAtt:
+                - StreamFailureQueue
+                - Arn
+  GenerationRecoveryFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${GenerationRecoveryFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+  ImportRecoveryFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      SkipBuild: true
+    Properties:
+      CodeUri: .build/lambda/
+      Handler: harvest.import_recovery.handler
+      Timeout: 60
+      ReservedConcurrentExecutions: 1
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTableName}
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          Resource:
+            Fn::GetAtt:
+            - ImportsTable
+            - Arn
+        - Effect: Allow
+          Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          Resource:
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PlacesTableName}
+          - Fn::Sub: arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TargetsTableName}
+      Events:
+        Recover:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+              MaximumEventAgeInSeconds: 300
+            DeadLetterConfig:
+              Arn:
+                Fn::GetAtt:
+                - StreamFailureQueue
+                - Arn
+  ImportRecoveryFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${ImportRecoveryFunction}
+      RetentionInDays:
+        Ref: LogRetentionDays
+Outputs:
+  ApiUrl:
+    Value:
+      Fn::Sub: https://${HarvestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${EnvironmentName}
+  StreamFailureQueueUrl:
+    Value:
+      Ref: StreamFailureQueue

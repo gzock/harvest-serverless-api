@@ -1,0 +1,259 @@
+class HarvestAbstractException(Exception):
+    pass
+
+
+class ProjectError(HarvestAbstractException):
+    pass
+
+
+class RoleError(HarvestAbstractException):
+    pass
+
+
+class PlaceError(HarvestAbstractException):
+    pass
+
+
+class TargetError(HarvestAbstractException):
+    pass
+
+
+class PhotoError(HarvestAbstractException):
+    pass
+
+
+class GenerateError(HarvestAbstractException):
+    pass
+
+
+class ImportError(HarvestAbstractException):
+    pass
+
+
+class TemplateError(HarvestAbstractException):
+    pass
+
+
+class AuthError(HarvestAbstractException):
+    pass
+
+
+# code number range mapping
+# 0: succefully
+# 1-99: common error
+# 100-199: auth error
+# 200-299: project error
+# 300-399: place error
+# 400-499: target error
+# 500-599: photo error
+# 600-699: generate error
+# 700-799: import error
+# 800-899: Template error
+
+
+class NotSupportCharCodeError(AuthError):
+    title = "Not Suport Character Code"
+    message = "specfied file is not support character code."
+    code = 50
+
+    def __str__(self):
+        return self.title
+
+
+class ActionDeniedError(AuthError):
+    title = "Action denied"
+    message = "The action is denied."
+    code = 101
+
+    def __str__(self):
+        return self.title
+
+
+class NotMeetRequirementsToDeleteError(PlaceError):
+    title = "Not Meet Requirements To Delete"
+    message = "The execute action is not meet requirements to delete."
+    code = 301
+
+    def __str__(self):
+        return self.title
+
+
+class PlaceHierarchyLimitExceededError(PlaceError):
+    title = "Place Hierarchy Limit Exceeded"
+    message = "place hierarchy limit exceeded."
+    code = 302
+
+    def __str__(self):
+        return self.title
+
+
+class PhotoIsNotFoundError(PhotoError):
+    title = "Photo Is Not Found"
+    message = "designated photo is not found."
+    code = 501
+
+    def __str__(self):
+        return self.title
+
+
+class PhotoSaveLimitExceededError(PhotoError):
+    title = "Photo Save Limit Exceeded"
+    message = "photo save limit exceeded."
+    code = 502
+
+    def __str__(self):
+        return self.title
+
+
+class LastOnePhotoIsCanNotDeleteError(PhotoError):
+    title = "Last One Photo Is Can Not Delete"
+    message = "last one photo is can not delete."
+    code = 503
+
+    def __str__(self):
+        return self.title
+
+
+class AdoptedPhotoIsCanNotDeleteError(PhotoError):
+    title = "Adopted Photo Is Can Not Delete"
+    message = "adopted photo is can not delete."
+    code = 504
+
+    def __str__(self):
+        return self.title
+
+
+class DuplicatePlaceNameExistsError(PlaceError):
+    title = "Duplicate Place Name Exists"
+    duplicate_names = ""
+    message = "detected duplicate place names: "
+    code = 701
+
+    def __init__(self, message):
+        self.message += ",".join(message)
+
+    def __str__(self):
+        return self.title
+
+
+class MaxHierarchyExceededError(PlaceError):
+    title = "Max Hierarchy Exceeded"
+    message = "max hierarchy count is 5."
+    code = 702
+
+    def __str__(self):
+        return self.title
+
+
+class ParentPlaceNotFoundError(PlaceError):
+    title = "Parent Place Not Found"
+    message = "parent place is not found in project places."
+    code = 703
+
+    def __str__(self):
+        return self.title
+
+
+class CsvContentDecodeError(ImportError):
+    title = "Csv Content Decode Error"
+    message = "decode csv content failed. this csv is not support char code."
+    code = 704
+
+    def __str__(self):
+        return self.title
+
+
+class MaxImportCountExceededError(AuthError):
+    title = "Max Import Count Exceeded"
+    message = "max import count exceeded."
+    code = 705
+
+    def __str__(self):
+        return self.title
+
+
+class TemplateNotFoundError(TemplateError):
+    title = "Template Not Found"
+    message = "specified template is not found."
+    code = 801
+
+    def __str__(self):
+        return self.title
+
+
+class TemplateTypeInvalidError(TemplateError):
+    title = "Template Type Invalid"
+    message = "specified template type is invalid."
+    code = 802
+
+    def __str__(self):
+        return self.title
+
+
+class TemplateMaxCountExceededError(AuthError):
+    title = "Template Max Count Exceeded"
+    message = "has template max count is exceeded."
+    code = 803
+
+    def __str__(self):
+        return self.title
+
+
+class DuplicateTemplateNameExistsError(PlaceError):
+    title = "Duplicate Template Name Exists"
+    message = "duplicate template name exists."
+    code = 804
+
+    def __str__(self):
+        return self.title
+
+
+class NeedsPropertyNotExistsError(TemplateError):
+    title = "Needs Propetry Not Exists"
+    message = "needs propety is not exists in specified template. please specific string: "
+    code = 805
+
+    def __init__(self, message):
+        self.message += message
+
+    def __str__(self):
+        return self.title
+
+
+class PageBreaksCountInvalidError(TemplateError):
+    title = "Page Breaks Count Invalid"
+    message = "configured page breaks count is invalid in template."
+    code = 806
+
+    def __str__(self):
+        return self.title
+
+
+class PrintAreaNotExistsError(TemplateError):
+    title = "Print Area Not Exists"
+    message = "print area is not exists in template."
+    code = 807
+
+    def __str__(self):
+        return self.title
+
+
+class SettingPropertyCountInvalidError(TemplateError):
+    title = "Setting Property Count Invalid"
+    message = "setting propery count is invalid. propery: %s, count: %d"
+    code = 808
+
+    def __init__(self, propery, count):
+        self.message = self.message % (propery, count)
+
+    def __str__(self):
+        return self.title
+
+
+class SettingPropertyPositionInvalidError(TemplateError):
+    title = "Setting Property Position Invalid"
+    message = "setting property position is invalid."
+    code = 809
+
+    def __str__(self):
+        return self.title

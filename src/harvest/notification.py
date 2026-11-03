@@ -1,0 +1,56 @@
+from harvest.controllers.notification_controller import NotificationController
+from harvest.auth import Auth
+
+
+class Notification:
+    user_id = None
+    notification_id = None
+    project_id = None
+
+    def __init__(self, host=None, port=None):
+        self.notification = NotificationController(host, port)
+        self.auth = Auth(host, port)
+
+    # common setters
+    def set_user_id(self, user_id):
+        self.user_id = user_id
+        self.notification.set_user_id(user_id)
+        self.auth.set_user_id(user_id)
+
+    def set_project_id(self, project_id):
+        self.project_id = project_id
+        self.notification.set_project_id(project_id)
+        self.auth.set_project_id(project_id)
+
+    def set_notification_id(self, notification_id):
+        self.notification_id = str(notification_id)
+        self.notification.set_notification_id(notification_id)
+
+    # actions for notification
+    # 作成はユーザーベースでは実行しない、必ずNotificationsDispatcherFunctionが実行するため、ここは不要
+    # def create_notification(self, message, user_id, project_id):
+    #  if not self.auth.guard():
+    #    raise ActionDeniedError()
+    #  return self.notification.create(user_id, project_id)
+
+    def update_notification(self, read, notification_ids=None):
+        # TODO: user_idとnotification_idだけでどうguardする？
+        # if not self.auth.guard():
+        #  raise ActionDeniedError()
+        return self.notification.update(read, notification_ids=notification_ids)
+
+    # 削除は基本的にttlに任せてる
+    def delete_notification(self, notification_id=None, notification_ids=None):
+        return self.notification.delete(
+            notification_id=notification_id, notification_ids=notification_ids
+        )
+
+    def show_notification(self):
+        # TODO: user_idとnotification_idだけでどうguardする？
+        # if not self.auth.guard():
+        #  raise ActionDeniedError()
+        return self.notification.show()
+
+    def list_notifications(self):
+        # cognitoのid_tokenを使ってuser_idを取得しているので、ここの部分で他のuser_idをセットしてlist()することはできない
+        return self.notification.list()
